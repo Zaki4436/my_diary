@@ -46,7 +46,11 @@ class _EmailChangePageState extends State<EmailChangePage> {
       _successMsg = 'Email changed successfully!';
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Email changed successfully!')),
+      SnackBar(content: Text('Email changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+      duration: Duration(seconds: 2),
+      backgroundColor: Color.fromARGB(255, 47, 83, 179),
+      behavior: SnackBarBehavior.floating,
+      ),
     );
     Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
   }

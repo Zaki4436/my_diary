@@ -56,6 +56,14 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     setState(() {
       _passError = null;
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Password changed successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+        duration: Duration(seconds: 2),
+        backgroundColor: Color.fromARGB(255, 47, 83, 179),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
     Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
   }
 
