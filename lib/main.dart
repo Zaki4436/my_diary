@@ -3,6 +3,10 @@ import 'login.dart';
 import 'homepage.dart';
 import 'signup.dart';
 import 'account.dart';
+import 'password_change.dart';
+import 'email_change.dart';
+
+final ValueNotifier<bool> isDarkMode = ValueNotifier(false);
 
 void main() {
   runApp(DiaryApp());
@@ -11,16 +15,33 @@ void main() {
 class DiaryApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'My Diary App',
-      theme: ThemeData(primarySwatch: Colors.teal),
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => LoginPage(),
-        '/signup': (context) => SignUpPage(),
-        '/home': (context) => HomePage(),
-        '/account': (context) => AccountPage(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDarkMode,
+      builder: (context, dark, _) {
+        return MaterialApp(
+          title: 'My Diary App',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primarySwatch: Colors.teal,
+            scaffoldBackgroundColor: Color(0xFFFDF5FF),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primarySwatch: Colors.teal,
+            scaffoldBackgroundColor: Color(0xFF181A20),
+          ),
+          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          initialRoute: '/',
+          routes: {
+            '/': (context) => LoginPage(),
+            '/signup': (context) => SignUpPage(),
+            '/home': (context) => HomePage(),
+            '/account': (context) => AccountPage(),
+            '/change-password': (context) => PasswordChangePage(),
+            '/change-email': (context) => EmailChangePage(),
+          },
+        );
       },
     );
   }

@@ -2,12 +2,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class SQLHelper {
-  // Open database
   static Future<Database> _db() async {
     final dbPath = await getDatabasesPath();
     return openDatabase(
       join(dbPath, 'diary.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, version) {
         return db.execute('''
           CREATE TABLE entries (
@@ -18,10 +17,16 @@ class SQLHelper {
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE entries ADD COLUMN feeling TEXT');
+          await db.execute('ALTER TABLE entries ADD COLUMN description TEXT');
+          await db.execute('ALTER TABLE entries ADD COLUMN createdAt TEXT');
+        }
+      },
     );
   }
 
-  // Insert new entry
   static Future<void> insertEntry(String feeling, String description) async {
     final db = await _db();
     await db.insert(
@@ -35,7 +40,6 @@ class SQLHelper {
     );
   }
 
-  // Get all entries (ordered by newest first)
   static Future<List<Map<String, dynamic>>> getEntries() async {
     final db = await _db();
     return db.query(
@@ -44,7 +48,6 @@ class SQLHelper {
     );
   }
 
-  // Update existing entry
   static Future<void> updateEntry(int id, String feeling, String description) async {
     final db = await _db();
     await db.update(

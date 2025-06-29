@@ -1,4 +1,4 @@
-// Add these imports at the top if not present
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -9,11 +9,18 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
+  final _usernameController = TextEditingController();
 
-  int _selectedAvatar = 0; // 0: avatar1, 1: avatar2, 2: avatar3
+  int _selectedAvatar = 0;
+  bool _obscurePassword = true;
 
-  void _signup(BuildContext context) {
-    // You can use _selectedAvatar to know which avatar was chosen
+  void _signup(BuildContext context) async{
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('avatar_index', _selectedAvatar);
+    await prefs.setString('username', _usernameController.text.trim());
+    await prefs.setString('email', _emailController.text.trim());
+    await prefs.setString('password', _passController.text.trim());
     Navigator.pop(context);
   }
 
@@ -82,6 +89,15 @@ class _SignUpPageState extends State<SignUpPage> {
               Text("Create Account", style: TextStyle(color: Color.fromARGB(255, 47, 83, 179), fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 20),
               TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Username',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
@@ -92,11 +108,22 @@ class _SignUpPageState extends State<SignUpPage> {
               SizedBox(height: 16),
               TextField(
                 controller: _passController,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
               ),
               SizedBox(height: 24),
