@@ -1,12 +1,13 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:intl/intl.dart';
 
 class SQLHelper {
   static Future<Database> _db() async {
     final dbPath = await getDatabasesPath();
     return openDatabase(
       join(dbPath, 'diary.db'),
-      version: 2,
+      version: 1,
       onCreate: (db, version) {
         return db.execute('''
           CREATE TABLE entries (
@@ -17,24 +18,19 @@ class SQLHelper {
           )
         ''');
       },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute('ALTER TABLE entries ADD COLUMN feeling TEXT');
-          await db.execute('ALTER TABLE entries ADD COLUMN description TEXT');
-          await db.execute('ALTER TABLE entries ADD COLUMN createdAt TEXT');
-        }
-      },
     );
   }
 
   static Future<void> insertEntry(String feeling, String description) async {
     final db = await _db();
+    final now = DateTime.now();
+    final formatted = DateFormat('d MMMM yyyy, h:mm a').format(now); // e.g. 30 September 2004, 4:18 AM
     await db.insert(
       'entries',
       {
         'feeling': feeling,
         'description': description,
-        'createdAt': DateTime.now().toIso8601String(),
+        'createdAt': formatted,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -50,12 +46,14 @@ class SQLHelper {
 
   static Future<void> updateEntry(int id, String feeling, String description) async {
     final db = await _db();
+    final now = DateTime.now();
+    final formatted = DateFormat('d MMMM yyyy, h:mm a').format(now);
     await db.update(
       'entries',
       {
         'feeling': feeling,
         'description': description,
-        'createdAt': DateTime.now().toIso8601String(),
+        'createdAt': formatted,
       },
       where: 'id = ?',
       whereArgs: [id],

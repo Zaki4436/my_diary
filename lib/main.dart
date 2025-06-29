@@ -23,15 +23,15 @@ class DiaryApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             brightness: Brightness.light,
-            primarySwatch: Colors.teal,
+            primarySwatch: Colors.blue,
             scaffoldBackgroundColor: Color(0xFFFDF5FF),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
-            primarySwatch: Colors.teal,
+            primarySwatch: Colors.blue,
             scaffoldBackgroundColor: Color(0xFF181A20),
           ),
-          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          themeMode: isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
           initialRoute: '/',
           routes: {
             '/': (context) => LoginPage(),

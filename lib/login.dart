@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_diary/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
@@ -30,66 +31,80 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Image.asset(
-                'assets/logo.webp',
-                width: 130,
-                height: 130,
-              ),
-              SizedBox(height: 20),
-              Text("Welcome To My Diary", style: TextStyle(color: Color.fromARGB(255, 47, 83, 179), fontSize: 24, fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  errorText: _emailError ? 'Wrong email' : null,
+    final bool _isDarkMode = isDarkMode.value;
+    final lightTheme = ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: Colors.white,
+    );
+    final darkTheme = ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: Colors.white,
+    );
+
+    return Theme(
+      data: _isDarkMode ? darkTheme : lightTheme,
+      child: Scaffold(
+        backgroundColor: _isDarkMode ? Colors.white : Colors.white,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Image.asset(
+                  'assets/logo.webp',
+                  width: 130,
+                  height: 130,
                 ),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _passController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  errorText: _passError ? 'Wrong password' : null,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                SizedBox(height: 20),
+                Text("Welcome To MCR Diary", style: TextStyle(color: Color.fromARGB(255, 47, 83, 179), fontSize: 24, fontWeight: FontWeight.bold)),
+                SizedBox(height: 20),
+                TextField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    errorText: _emailError ? 'Wrong email' : null,
                   ),
                 ),
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => _login(context),
-                child: Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  backgroundColor: const Color.fromARGB(255, 47, 83, 179),
+                SizedBox(height: 16),
+                TextField(
+                  controller: _passController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    errorText: _passError ? 'Wrong password' : null,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
                 ),
-              ),
-              TextButton(
-                child: Text("Don't have an account? Sign Up"),
-                onPressed: () => Navigator.pushNamed(context, '/signup'),
-              )
-            ],
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => _login(context),
+                  child: Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    backgroundColor: const Color.fromARGB(255, 47, 83, 179),
+                  ),
+                ),
+                TextButton(
+                  child: Text("Don't have an account? Sign Up"),
+                  onPressed: () => Navigator.pushNamed(context, '/signup'),
+                )
+              ],
+            ),
           ),
         ),
       ),
@@ -97,5 +112,5 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// email: zakihassim
-// password: kakitangan
+// email: zaki
+// password: zaki

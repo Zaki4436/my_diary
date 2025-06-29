@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'sql_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account.dart';
-import 'main.dart'; // Import for isDarkMode ValueNotifier
+import 'main.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -47,8 +47,7 @@ class _HomePageState extends State<HomePage> {
 
   void _refreshEntries() async {
     final data = await SQLHelper.getEntries();
-    setState(() => _entries = data);
-    print(_entries);
+    setState(() => _entries = List<Map<String, dynamic>>.from(data));
   }
 
   void _showEntryModal({Map<String, dynamic>? entry}) {
@@ -62,9 +61,11 @@ class _HomePageState extends State<HomePage> {
       _descController.clear();
     }
 
+    final bool _isDarkMode = isDarkMode.value;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: _isDarkMode ? const Color(0xFF23272F) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(50)),
       ),
@@ -82,7 +83,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 _editingId == null ? "New Diary" : "Edit Diary",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),
               ),
               SizedBox(height: 12),
               TextField(
@@ -108,10 +109,7 @@ class _HomePageState extends State<HomePage> {
               ElevatedButton(
                 child: Text(
                   _editingId == null ? "Add" : "Update",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 onPressed: () async {
                   if (_feelingController.text.trim().isEmpty ||
@@ -130,7 +128,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
                   _refreshEntries();
-                  print('Add button pressed');
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
@@ -148,44 +145,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _deleteEntry(int id) async {
+  Future<void> _deleteEntry(int id) async {
     await SQLHelper.deleteEntry(id);
     _refreshEntries();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use the global theme notifier
     bool _isDarkMode = isDarkMode.value;
 
     final lightTheme = ThemeData(
       brightness: Brightness.light,
-      scaffoldBackgroundColor: Color(0xFFFDF5FF),
+      scaffoldBackgroundColor: Colors.white,
     );
     final darkTheme = ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: Color(0xFF181A20),
+      scaffoldBackgroundColor: Colors.black,
     );
 
     return Theme(
       data: _isDarkMode ? darkTheme : lightTheme,
       child: Scaffold(
-        backgroundColor: _isDarkMode ? Color(0xFF181A20) : Color(0xFFFDF5FF),
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.lightBlue.shade50,
+          backgroundColor: _isDarkMode ? Colors.grey[900]?.withOpacity(0.8) : Colors.lightBlue.shade100.withOpacity(0.8),
           elevation: 0,
           automaticallyImplyLeading: false,
           centerTitle: true,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                'assets/logo.webp',
-                height: 36,
-              ),
+              Image.asset('assets/logo.webp', height: 36),
               SizedBox(width: 12),
               Text(
-                'Your Secret Is My Secret Too',
+                'MCR Diary',
                 style: TextStyle(
                   color: _isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179),
                   fontWeight: FontWeight.bold,
@@ -196,158 +189,205 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        body: Column(
+        body: Stack(
           children: [
-            SizedBox(height: 16),
-            // Profile photo and username
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AccountPage()),
-                    );
-                  },
-                  child: CircleAvatar(
-                    radius: 32,
-                    backgroundImage: AssetImage(_avatars[_avatarIndex]),
-                    backgroundColor: Colors.grey.shade300,
-                  ),
-                ),
-                SizedBox(width: 16),
-                Text(
-                  _username,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: _isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-              ],
+            Positioned.fill(
+              child: Image.asset(
+                'assets/background.jpg',
+                fit: BoxFit.cover,
+              ),
             ),
-            // Dark/Light mode switch below profile photo
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            if (_isDarkMode)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.5),
+                ),
+              ),
+            Column(
               children: [
-                Icon(
-                  _isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                  color: _isDarkMode ? Colors.yellow : Colors.black,
-                ),
-                Switch(
-                  value: _isDarkMode,
-                  onChanged: (val) {
-                    setState(() {
-                      isDarkMode.value = val;
-                    });
-                  },
-                  activeColor: Colors.yellow,
-                  inactiveThumbColor: Colors.grey,
-                ),
-                Text(
-                  _isDarkMode ? "Dark Mode" : "Light Mode",
-                  style: TextStyle(
-                    color: _isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 24),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: _entries.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No diary yet. Try add your story.',
-                          style: TextStyle(
-                            color: _isDarkMode ? Colors.white70 : Color.fromARGB(255, 47, 83, 179),
-                            fontSize: 16,
+                SizedBox(height: 100),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AccountPage()),
+                              );
+                            },
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                              backgroundColor: Colors.grey.shade300,
+                            ),
                           ),
+                          SizedBox(width: 12),
+                          Text(
+                            _username,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: _isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 24),
+                      child: IconButton(
+                        icon: Icon(
+                          _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
+                          color: _isDarkMode ? Colors.yellow : Colors.orange,
+                          size: 32,
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _entries.length,
-                        itemBuilder: (context, index) {
-                          final entry = _entries[index];
-                          return Container(
-                            margin: EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _isDarkMode ? Colors.grey[850] : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                )
-                              ],
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.all(16),
-                              title: Text(
-                                entry['feeling'],
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry['description'],
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: _isDarkMode ? Colors.white70 : Colors.black87,
-                                      ),
-                                    ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      entry['createdAt'],
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => _showEntryModal(entry: entry),
-                                    child: Text(
-                                      "Edit",
-                                      style: TextStyle(
-                                        color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => _deleteEntry(entry['id']),
-                                    child: Text(
-                                      "Delete",
-                                      style: TextStyle(
-                                        color: Colors.redAccent,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
+                        onPressed: () {
+                          setState(() {
+                            isDarkMode.value = !isDarkMode.value;
+                          });
                         },
                       ),
-              ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _entries.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No diary yet. Try add your story.',
+                              style: TextStyle(
+                                color: _isDarkMode ? Colors.white70 : Color.fromARGB(255, 47, 83, 179),
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _entries.length,
+                            itemBuilder: (context, index) {
+                              final entry = _entries[index];
+                              return Container(
+                                margin: EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black12, blurRadius: 6),
+                                  ],
+                                ),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.all(16),
+                                  title: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Builder(
+                                        builder: (context) {
+                                          final createdAt = entry['createdAt'] ?? '';
+                                          final parts = createdAt.split(',');
+                                          final date = parts.isNotEmpty ? parts[0] : '';
+                                          final time = parts.length > 1 ? parts[1].trim() : '';
+                                          return Row(
+                                            children: [
+                                              Text(
+                                                date,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                time,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        entry['feeling'],
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: _isDarkMode ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          entry['description'],
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: _isDarkMode ? Colors.white70 : Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(Icons.edit, color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179)),
+                                        onPressed: () => _showEntryModal(entry: entry),
+                                        tooltip: "Edit",
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete, color: Colors.redAccent),
+                                        onPressed: () async {
+                                          // Store deleted entry and index
+                                          final deletedEntry = Map<String, dynamic>.from(entry);
+                                          final deletedIndex = index;
+
+                                          await SQLHelper.deleteEntry(entry['id']);
+                                          _refreshEntries();
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Diary deleted'),
+                                              action: SnackBarAction(
+                                                label: 'UNDO',
+                                                onPressed: () async {
+                                                  await SQLHelper.insertEntry(
+                                                    deletedEntry['feeling'],
+                                                    deletedEntry['description'],
+                                                  );
+                                                  _refreshEntries();
+                                                },
+                                              ),
+                                              duration: Duration(seconds: 4),
+                                            ),
+                                          );
+                                        },
+                                        tooltip: "Delete",
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

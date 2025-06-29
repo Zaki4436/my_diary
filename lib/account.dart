@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'password_change.dart';
 import 'email_change.dart';
+import 'main.dart';
+
+bool _isDarkMode = isDarkMode.value;
 
 class AccountPage extends StatefulWidget {
   @override
