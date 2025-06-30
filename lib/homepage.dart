@@ -287,123 +287,135 @@ class _HomePageState extends State<HomePage> {
                               final time = parts.length > 1 ? parts[1].trim() : '';
                               final isExpanded = _expandedIndexes.contains(index);
 
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (isExpanded) {
-                                      _expandedIndexes.remove(index);
-                                    } else {
-                                      _expandedIndexes.add(index);
-                                    }
-                                  });
+                              return Dismissible(
+                                key: Key(entry['id'].toString()),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: EdgeInsets.symmetric(horizontal: 24),
+                                  color: Colors.redAccent,
+                                  child: Icon(Icons.delete, color: Colors.white, size: 32),
+                                ),
+                                onDismissed: (direction) async {
+                                  final deletedEntry = Map<String, dynamic>.from(entry);
+
+                                  await SQLHelper.deleteEntry(entry['id']);
+                                  _refreshEntries();
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Diary deleted'),
+                                      action: SnackBarAction(
+                                        label: 'UNDO',
+                                        onPressed: () async {
+                                          await SQLHelper.insertEntry(
+                                            deletedEntry['feeling'],
+                                            deletedEntry['description'],
+                                          );
+                                          _refreshEntries();
+                                        },
+                                      ),
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
                                 },
-                                child: Container(
-                                  margin: EdgeInsets.symmetric(vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(color: Colors.black12, blurRadius: 6),
-                                    ],
-                                  ),
-                                  child: SizedBox(
-                                    height: isExpanded ? null : 130,
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.all(16),
-                                      title: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                date,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.grey,
-                                                  fontWeight: FontWeight.w500,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isExpanded) {
+                                        _expandedIndexes.remove(index);
+                                      } else {
+                                        _expandedIndexes.add(index);
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black12, blurRadius: 6),
+                                      ],
+                                    ),
+                                    child: SizedBox(
+                                      height: isExpanded ? null : 130,
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.all(16),
+                                        title: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  date,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
                                                 ),
-                                              ),
-                                              SizedBox(width: 12),
-                                              Text(
-                                                time,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.grey,
-                                                  fontWeight: FontWeight.w500,
+                                                SizedBox(width: 12,),
+                                                Text(
+                                                  time,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 8),
-                                          Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      entry['feeling'],
-                                                      style: TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: _isDarkMode ? Colors.white : Colors.black,
+                                              ],
+                                            ),
+                                            SizedBox(height: 5),
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        entry['feeling'],
+                                                        style: TextStyle(
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: _isDarkMode ? Colors.white : Colors.black,
+                                                        ),
+                                                        maxLines: isExpanded ? null : 1,
+                                                        overflow: isExpanded
+                                                            ? TextOverflow.visible
+                                                            : TextOverflow.ellipsis,
                                                       ),
-                                                      maxLines: isExpanded ? null : 1,
-                                                      overflow: isExpanded
-                                                          ? TextOverflow.visible
-                                                          : TextOverflow.ellipsis,
-                                                    ),
-                                                    SizedBox(height: 4),
-                                                    Text(
-                                                      entry['description'],
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: _isDarkMode ? Colors.white70 : Colors.black87,
+                                                      SizedBox(height: 9),
+                                                      Text(
+                                                        entry['description'],
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          color: _isDarkMode ? Colors.white70 : Colors.black87,
+                                                        ),
+                                                        maxLines: isExpanded ? null : 1,
+                                                        overflow: isExpanded
+                                                            ? TextOverflow.visible
+                                                            : TextOverflow.ellipsis,
                                                       ),
-                                                      maxLines: isExpanded ? null : 1,
-                                                      overflow: isExpanded
-                                                          ? TextOverflow.visible
-                                                          : TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.edit, color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179)),
-                                                onPressed: () => _showEntryModal(entry: entry),
-                                                tooltip: "Edit",
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.delete, color: Colors.redAccent),
-                                                onPressed: () async {
-                                                  final deletedEntry = Map<String, dynamic>.from(entry);
-
-                                                  await SQLHelper.deleteEntry(entry['id']);
-                                                  _refreshEntries();
-
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text('Diary deleted'),
-                                                      action: SnackBarAction(
-                                                        label: 'UNDO',
-                                                        onPressed: () async {
-                                                          await SQLHelper.insertEntry(
-                                                            deletedEntry['feeling'],
-                                                            deletedEntry['description'],
-                                                          );
-                                                          _refreshEntries();
-                                                        },
-                                                      ),
-                                                      duration: Duration(seconds: 4),
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 0),
+                                                  child: IconButton(
+                                                    icon: Icon(
+                                                      Icons.edit,
+                                                      color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179),
                                                     ),
-                                                  );
-                                                },
-                                                tooltip: "Delete",
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                                    onPressed: () => _showEntryModal(entry: entry),
+                                                    tooltip: "Edit",
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

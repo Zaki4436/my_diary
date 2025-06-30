@@ -204,124 +204,142 @@ class _AccountPageState extends State<AccountPage> {
               children: [
                 SizedBox(height: 120),
                 Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  'Account Settings',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _isDarkMode ? Colors.white : Colors.white,
-                    letterSpacing: 1.1,
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    'Account Settings',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: _isDarkMode ? Colors.white : Colors.white,
+                      letterSpacing: 1.1,
+                    ),
                   ),
                 ),
-              ),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: _showChangeAvatarDialog,
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundImage: AssetImage(_avatars[_avatarIndex]),
-                              backgroundColor: Colors.grey[200],
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            _username,
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 10),
+                SizedBox(height: 50),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 5, bottom: 15),
+                      child: IconButton(
+                        icon: Icon(
+                          _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
+                          color: _isDarkMode ? Colors.yellow : Colors.orange,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isDarkMode.value = !isDarkMode.value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _showChangeAvatarDialog,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                    backgroundColor: Colors.grey[200],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  _username,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                TextButton(
+                  onPressed: _showChangeUsernameDialog,
+                  child: Text(
+                    "Change Username",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: _isDarkMode
+                          ? Color.fromARGB(255, 128, 161, 252)
+                          : Color.fromARGB(255, 47, 83, 179),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: _showChangeEmailDialog,
+                      child: Text(
+                        "Change Email",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: _isDarkMode
+                              ? Color.fromARGB(255, 128, 161, 252)
+                              : Color.fromARGB(255, 47, 83, 179),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PasswordChangePage()),
+                        );
+                      },
+                      child: Text(
+                        "Change Password",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: _isDarkMode
+                              ? Color.fromARGB(255, 128, 161, 252)
+                              : Color.fromARGB(255, 47, 83, 179),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                  icon: Icon(Icons.logout, color: Colors.white, size: 20,),
+                  label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 47, 83, 179),
+                    minimumSize: Size(300, 48),
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Delete Account'),
+                        content: Text('Are you sure you want to delete your account?'),
+                        actions: [
                           TextButton(
-                            onPressed: _showChangeUsernameDialog,
-                            child: Text(
-                              "Change Username",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancel'),
                           ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TextButton(
-                                onPressed: _showChangeEmailDialog,
-                                child: Text(
-                                  "Change Email",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => PasswordChangePage()),
-                                  );
-                                },
-                                child: Text(
-                                  "Change Password",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 30),
-                          ElevatedButton.icon(
-                            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-                            icon: Icon(Icons.logout, color: Colors.white, size: 20,),
-                            label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color.fromARGB(255, 47, 83, 179),
-                              minimumSize: Size(double.infinity, 48),
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          ElevatedButton.icon(
+                          TextButton(
                             onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Delete Account'),
-                                  content: Text('Are you sure you want to delete your account?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        Navigator.pushReplacementNamed(context, '/');
-                                      },
-                                      child: Text('Confirm', style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/');
                             },
-                            icon: Icon(Icons.delete, color: Colors.white, size: 20),
-                            label: Text('Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              minimumSize: Size(double.infinity, 48),
-                            ),
+                            child: Text('Confirm', style: TextStyle(color: Colors.red)),
                           ),
                         ],
                       ),
-                    ),
+                    );
+                  },
+                  icon: Icon(Icons.delete, color: Colors.white, size: 20),
+                  label: Text('Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    minimumSize: Size(300, 48),
                   ),
                 ),
               ],
