@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
               TextField(
                 controller: _feelingController,
                 decoration: InputDecoration(
-                  labelText: 'How are you feeling today?',
+                  labelText: 'How are you feeling today?', labelStyle: TextStyle(fontStyle: FontStyle.italic),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> {
               TextField(
                 controller: _descController,
                 decoration: InputDecoration(
-                  labelText: 'What happened today?',
+                  labelText: 'What happened today?', labelStyle: TextStyle(fontStyle: FontStyle.italic),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -174,7 +174,9 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: _isDarkMode ? Colors.grey[900]?.withOpacity(0.8) : Colors.lightBlue.shade100.withOpacity(0.8),
+          backgroundColor: _isDarkMode 
+          ? Colors.grey[900]?.withOpacity(0.8) 
+          : Colors.lightBlue.shade100.withOpacity(0.8),
           elevation: 0,
           automaticallyImplyLeading: false,
           centerTitle: true,
@@ -238,7 +240,7 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: _isDarkMode ? Colors.white : Colors.black,
+                              color: _isDarkMode ? Colors.white : Colors.white,
                             ),
                           ),
                         ],

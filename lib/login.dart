@@ -29,83 +29,108 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final bool _isDarkMode = isDarkMode.value;
+
     final lightTheme = ThemeData(
       brightness: Brightness.light,
       scaffoldBackgroundColor: Colors.white,
     );
     final darkTheme = ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: Colors.white,
+      scaffoldBackgroundColor: Colors.black,
     );
 
     return Theme(
       data: _isDarkMode ? darkTheme : lightTheme,
       child: Scaffold(
-        backgroundColor: _isDarkMode ? Colors.white : Colors.white,
-        body: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Image.asset(
-                  'assets/logo.webp',
-                  width: 130,
-                  height: 130,
-                ),
-                SizedBox(height: 20),
-                Text("Welcome To MCR Diary", style: TextStyle(color: Color.fromARGB(255, 47, 83, 179), fontSize: 24, fontWeight: FontWeight.bold)),
-                SizedBox(height: 20),
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    errorText: _emailError ? 'Wrong email' : null,
-                  ),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: _passController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    errorText: _passError ? 'Wrong password' : null,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => _login(context),
-                  child: Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    backgroundColor: const Color.fromARGB(255, 47, 83, 179),
-                  ),
-                ),
-                TextButton(
-                  child: Text("Don't have an account? Sign Up"),
-                  onPressed: () => Navigator.pushNamed(context, '/signup'),
-                )
-              ],
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/background.jpg',
+                fit: BoxFit.cover,
+                color: _isDarkMode ? Colors.black.withOpacity(0.5) : null,
+                colorBlendMode: _isDarkMode ? BlendMode.darken : BlendMode.srcOver,
+              ),
             ),
-          ),
+            Container(
+              color: _isDarkMode
+                  ? Colors.black.withOpacity(0.6)
+                  : Colors.white.withOpacity(0.7),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Image.asset(
+                      'assets/logo.webp',
+                      width: 130,
+                      height: 130,
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      "Welcome To MCR Diary",
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 47, 83, 179),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        errorText: _emailError ? 'Wrong email' : null,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: _passController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        errorText: _passError ? 'Wrong password' : null,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => _login(context),
+                      child: Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        backgroundColor: const Color.fromARGB(255, 47, 83, 179),
+                      ),
+                    ),
+                    TextButton(
+                      child: Text("Don't have an account? Sign Up"),
+                      onPressed: () => Navigator.pushNamed(context, '/signup'),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
