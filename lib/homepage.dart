@@ -425,6 +425,7 @@ class _HomePageState extends State<HomePage> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
