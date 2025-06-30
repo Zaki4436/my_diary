@@ -104,6 +104,9 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                keyboardType: TextInputType.multiline,
+                maxLines: null,
+                textInputAction: TextInputAction.newline,
               ),
               SizedBox(height: 12),
               ElevatedButton(
@@ -264,7 +267,7 @@ class _HomePageState extends State<HomePage> {
                             child: Text(
                               'No diary yet. Try add your story.',
                               style: TextStyle(
-                                color: _isDarkMode ? Colors.white70 : Color.fromARGB(255, 47, 83, 179),
+                                color: _isDarkMode ? Colors.white70 : Colors.black,
                                 fontSize: 16,
                               ),
                             ),
@@ -298,25 +301,25 @@ class _HomePageState extends State<HomePage> {
                                               Text(
                                                 date,
                                                 style: TextStyle(
-                                                  fontSize: 13,
-                                                  color: Colors.grey,
-                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 17,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              SizedBox(width: 12),
+                                              SizedBox(width: 26),
                                               Text(
                                                 time,
                                                 style: TextStyle(
-                                                  fontSize: 13,
-                                                  color: Colors.grey,
-                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 17,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ],
                                           );
                                         },
                                       ),
-                                      SizedBox(height: 4),
+                                      SizedBox(height: 8),
                                       Text(
                                         entry['feeling'],
                                         style: TextStyle(
