@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   int? _editingId;
 
   Set<int> _expandedIndexes = {};
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -181,7 +182,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset('assets/logo.webp', height: 36),
-              SizedBox(width: 12),
+              SizedBox(width: 15),
               Text(
                 'MCR Diary',
                 style: TextStyle(
@@ -315,7 +316,7 @@ class _HomePageState extends State<HomePage> {
                                               Text(
                                                 date,
                                                 style: TextStyle(
-                                                  fontSize: 13,
+                                                  fontSize: 16,
                                                   color: Colors.grey,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -324,7 +325,7 @@ class _HomePageState extends State<HomePage> {
                                               Text(
                                                 time,
                                                 style: TextStyle(
-                                                  fontSize: 13,
+                                                  fontSize: 16,
                                                   color: Colors.grey,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -346,6 +347,10 @@ class _HomePageState extends State<HomePage> {
                                                         fontWeight: FontWeight.bold,
                                                         color: _isDarkMode ? Colors.white : Colors.black,
                                                       ),
+                                                      maxLines: isExpanded ? null : 1,
+                                                      overflow: isExpanded
+                                                          ? TextOverflow.visible
+                                                          : TextOverflow.ellipsis,
                                                     ),
                                                     SizedBox(height: 4),
                                                     Text(
@@ -413,19 +418,65 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: FloatingActionButton(
           backgroundColor: Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
           onPressed: () => _showEntryModal(),
-          child: Text(
-            "+",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: Icon(Icons.add, color: Colors.white, size: 32),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomAppBar(
+          color: _isDarkMode ? Colors.grey[900] : Colors.white,
+          shape: CircularNotchedRectangle(),
+          notchMargin: 8,
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.list_alt,
+                      color: _selectedIndex == 0
+                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          : Colors.grey,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _selectedIndex = 0;
+                      });
+                    },
+                    tooltip: "View All",
+                  ),
+                ),
+                Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.settings,
+                      color: _selectedIndex == 1
+                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          : Colors.grey,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _selectedIndex = 1;
+                      });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => AccountPage()),
+                      );
+                    },
+                    tooltip: "Settings",
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

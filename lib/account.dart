@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'password_change.dart';
 import 'email_change.dart';
 import 'main.dart';
+import 'homepage.dart';
 
 bool _isDarkMode = isDarkMode.value;
 
@@ -22,6 +23,7 @@ class _AccountPageState extends State<AccountPage> {
   String _username = 'My Account';
   String _email = 'test@example.com';
   String _password = '';
+  int _selectedIndex = 1; // Settings tab selected
 
   @override
   void initState() {
@@ -153,121 +155,175 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Account Settings', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color.fromARGB(255, 47, 83, 179),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          },
+    _isDarkMode = isDarkMode.value;
+    return Theme(
+      data: _isDarkMode
+          ? ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black)
+          : ThemeData.light().copyWith(scaffoldBackgroundColor: Colors.white),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Account Settings', style: TextStyle(color: Colors.white)),
+          backgroundColor: Color.fromARGB(255, 47, 83, 179),
+          automaticallyImplyLeading: false, // Remove arrow left
         ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: _showChangeAvatarDialog,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage(_avatars[_avatarIndex]),
-                  backgroundColor: Colors.grey[200],
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                _username,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: _showChangeUsernameDialog,
-                child: Text(
-                  "Change Username",
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 47, 83, 179),
-                    fontWeight: FontWeight.bold,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: _showChangeAvatarDialog,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                    backgroundColor: Colors.grey[200],
                   ),
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: _showChangeEmailDialog,
-                    child: Text(
-                      "Change Email",
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 47, 83, 179),
-                        fontWeight: FontWeight.bold,
-                      ),
+                SizedBox(height: 10),
+                Text(
+                  _username,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                TextButton(
+                  onPressed: _showChangeUsernameDialog,
+                  child: Text(
+                    "Change Username",
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 47, 83, 179),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(width: 10),
-                  TextButton(
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: _showChangeEmailDialog,
+                      child: Text(
+                        "Change Email",
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 47, 83, 179),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PasswordChangePage()),
+                        );
+                      },
+                      child: Text(
+                        "Change Password",
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 47, 83, 179),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                  icon: Icon(Icons.logout, color: Colors.white, size: 20,),
+                  label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 47, 83, 179),
+                    minimumSize: Size(double.infinity, 48),
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Delete Account'),
+                        content: Text('Are you sure you want to delete your account?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/');
+                            },
+                            child: Text('Confirm', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.delete, color: Colors.white, size: 20),
+                  label: Text('Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    minimumSize: Size(double.infinity, 48),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        bottomNavigationBar: BottomAppBar(
+          color: _isDarkMode ? Colors.grey[900] : Colors.white,
+          shape: CircularNotchedRectangle(),
+          notchMargin: 5,
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32), // 👈 Control spacing
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.list_alt,
+                      color: _selectedIndex == 0
+                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          : Colors.grey,
+                      size: 28,
+                    ),
                     onPressed: () {
+                      setState(() {
+                        _selectedIndex = 0;
+                      });
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => PasswordChangePage()),
+                        MaterialPageRoute(builder: (context) => HomePage()),
                       );
                     },
-                    child: Text(
-                      "Change Password",
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 47, 83, 179),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    tooltip: "View All",
                   ),
-                ],
-              ),
-              SizedBox(height: 30),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-                icon: Icon(Icons.logout, color: Colors.white, size: 20,),
-                label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 47, 83, 179),
-                  minimumSize: Size(double.infinity, 48),
                 ),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('Delete Account'),
-                      content: Text('Are you sure you want to delete your account?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.pushReplacementNamed(context, '/');
-                          },
-                          child: Text('Confirm', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
+                Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.settings,
+                      color: _selectedIndex == 1
+                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          : Colors.grey,
+                      size: 28,
                     ),
-                  );
-                },
-                icon: Icon(Icons.delete, color: Colors.white, size: 20),
-                label: Text('Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  minimumSize: Size(double.infinity, 48),
+                    onPressed: () {
+                      setState(() {
+                        _selectedIndex = 1;
+                      });
+                    },
+                    tooltip: "Settings",
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
