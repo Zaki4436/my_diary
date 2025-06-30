@@ -65,7 +65,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-    Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
   }
 
   @override

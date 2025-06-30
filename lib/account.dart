@@ -242,7 +242,6 @@ class _AccountPageState extends State<AccountPage> {
                             child: Text(
                               "Change Username",
                               style: TextStyle(
-                                color: _isDarkMode ? Color.fromARGB(255, 128, 161, 252) : Color.fromARGB(255, 47, 83, 179),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -256,7 +255,6 @@ class _AccountPageState extends State<AccountPage> {
                                 child: Text(
                                   "Change Email",
                                   style: TextStyle(
-                                    color: _isDarkMode ? Color.fromARGB(255, 128, 161, 252) : Color.fromARGB(255, 47, 83, 179),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -273,7 +271,6 @@ class _AccountPageState extends State<AccountPage> {
                                 child: Text(
                                   "Change Password",
                                   style: TextStyle(
-                                    color: _isDarkMode ? Color.fromARGB(255, 128, 161, 252) : Color.fromARGB(255, 47, 83, 179),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),

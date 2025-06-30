@@ -122,10 +122,32 @@ class _LoginPageState extends State<LoginPage> {
                         backgroundColor: const Color.fromARGB(255, 47, 83, 179),
                       ),
                     ),
-                    TextButton(
-                      child: Text("Don't have an account? Sign Up"),
-                      onPressed: () => Navigator.pushNamed(context, '/signup'),
-                    )
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/signup'),
+                          child: Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        TextButton(
+                          onPressed:  () => Navigator.pushNamed(context, '/change-password'),
+                          child: Text(
+                            "Forgot Password",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
