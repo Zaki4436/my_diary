@@ -23,6 +23,8 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _descController = TextEditingController();
   int? _editingId;
 
+  Set<int> _expandedIndexes = {};
+
   @override
   void initState() {
     super.initState();
@@ -276,113 +278,127 @@ class _HomePageState extends State<HomePage> {
                             itemCount: _entries.length,
                             itemBuilder: (context, index) {
                               final entry = _entries[index];
-                              return Container(
-                                margin: EdgeInsets.symmetric(vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(color: Colors.black12, blurRadius: 6),
-                                  ],
-                                ),
-                                child: ListTile(
-                                  contentPadding: EdgeInsets.all(16),
-                                  title: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Builder(
-                                        builder: (context) {
-                                          final createdAt = entry['createdAt'] ?? '';
-                                          final parts = createdAt.split(',');
-                                          final date = parts.isNotEmpty ? parts[0] : '';
-                                          final time = parts.length > 1 ? parts[1].trim() : '';
-                                          return Row(
+                              final createdAt = entry['createdAt'] ?? '';
+                              final parts = createdAt.split(',');
+                              final date = parts.isNotEmpty ? parts[0] : '';
+                              final time = parts.length > 1 ? parts[1].trim() : '';
+                              final isExpanded = _expandedIndexes.contains(index);
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (isExpanded) {
+                                      _expandedIndexes.remove(index);
+                                    } else {
+                                      _expandedIndexes.add(index);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(color: Colors.black12, blurRadius: 6),
+                                    ],
+                                  ),
+                                  child: SizedBox(
+                                    height: isExpanded ? null : 130,
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.all(16),
+                                      title: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
                                             children: [
                                               Text(
                                                 date,
                                                 style: TextStyle(
-                                                  fontSize: 17,
-                                                  color: Colors.grey[600],
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w500,
                                                 ),
                                               ),
-                                              SizedBox(width: 26),
+                                              SizedBox(width: 12),
                                               Text(
                                                 time,
                                                 style: TextStyle(
-                                                  fontSize: 17,
-                                                  color: Colors.grey[600],
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w500,
                                                 ),
                                               ),
                                             ],
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        entry['feeling'],
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: _isDarkMode ? Colors.white : Colors.black,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          entry['description'],
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: _isDarkMode ? Colors.white70 : Colors.black87,
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.edit, color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179)),
-                                        onPressed: () => _showEntryModal(entry: entry),
-                                        tooltip: "Edit",
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.delete, color: Colors.redAccent),
-                                        onPressed: () async {
-                                          // Store deleted entry and index
-                                          final deletedEntry = Map<String, dynamic>.from(entry);
-                                          final deletedIndex = index;
-
-                                          await SQLHelper.deleteEntry(entry['id']);
-                                          _refreshEntries();
-
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Diary deleted'),
-                                              action: SnackBarAction(
-                                                label: 'UNDO',
-                                                onPressed: () async {
-                                                  await SQLHelper.insertEntry(
-                                                    deletedEntry['feeling'],
-                                                    deletedEntry['description'],
-                                                  );
-                                                  _refreshEntries();
-                                                },
+                                          SizedBox(height: 8),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      entry['feeling'],
+                                                      style: TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: _isDarkMode ? Colors.white : Colors.black,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 4),
+                                                    Text(
+                                                      entry['description'],
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: _isDarkMode ? Colors.white70 : Colors.black87,
+                                                      ),
+                                                      maxLines: isExpanded ? null : 1,
+                                                      overflow: isExpanded
+                                                          ? TextOverflow.visible
+                                                          : TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              duration: Duration(seconds: 4),
-                                            ),
-                                          );
-                                        },
-                                        tooltip: "Delete",
+                                              IconButton(
+                                                icon: Icon(Icons.edit, color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179)),
+                                                onPressed: () => _showEntryModal(entry: entry),
+                                                tooltip: "Edit",
+                                              ),
+                                              IconButton(
+                                                icon: Icon(Icons.delete, color: Colors.redAccent),
+                                                onPressed: () async {
+                                                  final deletedEntry = Map<String, dynamic>.from(entry);
+
+                                                  await SQLHelper.deleteEntry(entry['id']);
+                                                  _refreshEntries();
+
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Diary deleted'),
+                                                      action: SnackBarAction(
+                                                        label: 'UNDO',
+                                                        onPressed: () async {
+                                                          await SQLHelper.insertEntry(
+                                                            deletedEntry['feeling'],
+                                                            deletedEntry['description'],
+                                                          );
+                                                          _refreshEntries();
+                                                        },
+                                                      ),
+                                                      duration: Duration(seconds: 4),
+                                                    ),
+                                                  );
+                                                },
+                                                tooltip: "Delete",
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               );
