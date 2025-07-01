@@ -303,7 +303,7 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 SizedBox(height: 30),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                   icon: Icon(Icons.logout, color: Colors.white, size: 20,),
                   label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
@@ -327,7 +327,7 @@ class _AccountPageState extends State<AccountPage> {
                           TextButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              Navigator.pushReplacementNamed(context, '/');
+                              Navigator.pushReplacementNamed(context, '/login');
                             },
                             child: Text('Confirm', style: TextStyle(color: Colors.red)),
                           ),

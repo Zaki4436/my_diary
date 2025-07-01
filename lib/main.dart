@@ -5,6 +5,7 @@ import 'signup.dart';
 import 'account.dart';
 import 'password_change.dart';
 import 'email_change.dart';
+import 'splashscreen.dart';
 
 final ValueNotifier<bool> isDarkMode = ValueNotifier(false);
 
@@ -32,9 +33,10 @@ class DiaryApp extends StatelessWidget {
             scaffoldBackgroundColor: Color(0xFF181A20),
           ),
           themeMode: isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
-          initialRoute: '/',
+          initialRoute: '/splash',
           routes: {
-            '/': (context) => LoginPage(),
+            '/splash': (context) => SplashPage(),
+            '/login': (context) => LoginPage(),
             '/signup': (context) => SignUpPage(),
             '/home': (context) => HomePage(),
             '/account': (context) => AccountPage(),
