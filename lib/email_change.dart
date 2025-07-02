@@ -16,6 +16,8 @@ class _EmailChangePageState extends State<EmailChangePage> {
   String? _emailError;
   String? _successMsg;
 
+  bool _obscurePassword = true;
+
   Future<void> _changeEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final oldEmail = _oldEmailController.text.trim();
@@ -51,11 +53,9 @@ class _EmailChangePageState extends State<EmailChangePage> {
     }
 
     try {
-      // Re-authenticate user
       final cred = EmailAuthProvider.credential(email: oldEmail, password: password);
       await currentUser?.reauthenticateWithCredential(cred);
 
-      // Send verification before updating email
       await currentUser?.verifyBeforeUpdateEmail(newEmail);
 
       setState(() {
@@ -145,12 +145,25 @@ class _EmailChangePageState extends State<EmailChangePage> {
                   SizedBox(height: 16),
                   TextField(
                     controller: _passwordController,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   SizedBox(height: 24),
