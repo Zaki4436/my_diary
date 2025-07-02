@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'password_change.dart';
 import 'email_change.dart';
 import 'main.dart';
 import 'homepage.dart';
+import 'login.dart';
 
 bool _isDarkMode = isDarkMode.value;
 
@@ -28,20 +31,13 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
-    _loadAvatar();
     _loadUserInfo();
-  }
-
-  Future<void> _loadAvatar() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _avatarIndex = prefs.getInt('avatar_index') ?? 0;
-    });
   }
 
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
+      _avatarIndex = prefs.getInt('avatar_index') ?? 0;
       _username = prefs.getString('username') ?? 'My Account';
       _email = prefs.getString('email') ?? 'test@example.com';
       _password = prefs.getString('password') ?? '';
@@ -50,7 +46,14 @@ class _AccountPageState extends State<AccountPage> {
 
   Future<void> _updateAvatar(int index) async {
     final prefs = await SharedPreferences.getInstance();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
     await prefs.setInt('avatar_index', index);
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'avatarIndex': index,
+    });
+
     setState(() {
       _avatarIndex = index;
     });
@@ -58,25 +61,16 @@ class _AccountPageState extends State<AccountPage> {
 
   Future<void> _updateUsername(String username) async {
     final prefs = await SharedPreferences.getInstance();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
     await prefs.setString('username', username);
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'username': username,
+    });
+
     setState(() {
       _username = username;
-    });
-  }
-
-  Future<void> _updateEmail(String email) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('email', email);
-    setState(() {
-      _email = email;
-    });
-  }
-
-  Future<void> _updatePassword(String password) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('password', password);
-    setState(() {
-      _password = password;
     });
   }
 
@@ -153,6 +147,35 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  Future<void> _deleteAccount() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('entries').where('uid', isEqualTo: uid).get().then((snap) async {
+        for (var doc in snap.docs) {
+          await doc.reference.delete();
+        }
+      });
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+
+      await FirebaseAuth.instance.currentUser?.delete();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    } catch (e) {
+      print('Account deletion error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting account: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     _isDarkMode = isDarkMode.value;
@@ -189,22 +212,17 @@ class _AccountPageState extends State<AccountPage> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'assets/background.jpg',
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/background.jpg', fit: BoxFit.cover),
             ),
             if (_isDarkMode)
               Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.5),
-                ),
+                child: Container(color: Colors.black.withOpacity(0.5)),
               ),
             Column(
               children: [
                 SizedBox(height: 120),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                   child: Text(
                     'Account Settings',
                     style: TextStyle(
@@ -215,27 +233,23 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 50),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 5, bottom: 15),
-                      child: IconButton(
-                        icon: Icon(
-                          _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
-                          color: _isDarkMode ? Colors.yellow : Colors.orange,
-                          size: 32,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            isDarkMode.value = !isDarkMode.value;
-                          });
-                        },
-                      ),
+                SizedBox(height: 40),
+                Padding(
+                  padding: const EdgeInsets.only(left: 5, right: 5),
+                  child: IconButton(
+                    icon: Icon(
+                      _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
+                      color: _isDarkMode ? Colors.yellow : Colors.orange,
+                      size: 32,
                     ),
-                  ],
+                    onPressed: () {
+                      setState(() {
+                        isDarkMode.value = !isDarkMode.value;
+                      });
+                    },
+                  ),
                 ),
+                SizedBox(height: 10),
                 GestureDetector(
                   onTap: _showChangeAvatarDialog,
                   child: CircleAvatar(
@@ -303,8 +317,13 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 SizedBox(height: 30),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                  icon: Icon(Icons.logout, color: Colors.white, size: 20,),
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.clear();
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  icon: Icon(Icons.logout, color: Colors.white, size: 20),
                   label: Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color.fromARGB(255, 47, 83, 179),
@@ -325,9 +344,9 @@ class _AccountPageState extends State<AccountPage> {
                             child: Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.pop(context);
-                              Navigator.pushReplacementNamed(context, '/login');
+                              await _deleteAccount();
                             },
                             child: Text('Confirm', style: TextStyle(color: Colors.red)),
                           ),
@@ -368,10 +387,7 @@ class _AccountPageState extends State<AccountPage> {
                       setState(() {
                         _selectedIndex = 0;
                       });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
                     },
                     tooltip: "View All",
                   ),

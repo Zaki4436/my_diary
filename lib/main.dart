@@ -6,10 +6,13 @@ import 'account.dart';
 import 'password_change.dart';
 import 'email_change.dart';
 import 'splashscreen.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 final ValueNotifier<bool> isDarkMode = ValueNotifier(false);
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(DiaryApp());
 }
 

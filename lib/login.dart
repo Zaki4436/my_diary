@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_diary/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:my_diary/main.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -14,22 +16,45 @@ class _LoginPageState extends State<LoginPage> {
   bool _emailError = false;
   bool _passError = false;
 
-  void _login(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('email') ?? '';
-    final savedPassword = prefs.getString('password') ?? '';
+  Future<void> _login(BuildContext context) async {
+    final email = _emailController.text.trim();
+    final password = _passController.text.trim();
 
-    setState(() {
-      _emailError = _emailController.text.trim() != savedEmail;
-      _passError = _passController.text.trim() != savedPassword;
-    });
+    try {
+      final auth = FirebaseAuth.instance;
+      final userCredential = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final uid = userCredential.user!.uid;
 
-    if (!_emailError && !_passError) {
+      // Fetch user profile from Firestore
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final user = snapshot.data();
+
+      if (user == null) throw Exception('User profile not found');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('uid', uid);
+      await prefs.setString('email', email);
+      await prefs.setString('username', user['username'] ?? 'My Account');
+      await prefs.setString('password', password);
+      await prefs.setInt('avatar_index', user['avatarIndex'] ?? 0);
+
       Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      print('Login failed: $e');
+      setState(() {
+        _emailError = true;
+        _passError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: ${e.toString()}')),
+      );
     }
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     final bool _isDarkMode = isDarkMode.value;
 
@@ -87,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                         labelText: 'Email',
                         prefixIcon: Icon(Icons.email),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        errorText: _emailError ? 'Wrong email' : null,
+                        errorText: _emailError ? 'Wrong email or password' : null,
                       ),
                     ),
                     SizedBox(height: 16),
@@ -98,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                         labelText: 'Password',
                         prefixIcon: Icon(Icons.lock),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        errorText: _passError ? 'Wrong password' : null,
+                        errorText: _passError ? 'Wrong email or password' : null,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -137,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         SizedBox(width: 10),
                         TextButton(
-                          onPressed:  () => Navigator.pushNamed(context, '/change-password'),
+                          onPressed: () => Navigator.pushNamed(context, '/change-password'),
                           child: Text(
                             "Forgot Password",
                             style: TextStyle(
@@ -158,6 +183,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-// email: zaki
-// password: zaki

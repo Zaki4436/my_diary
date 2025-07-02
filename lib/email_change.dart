@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'main.dart';
 
 class EmailChangePage extends StatefulWidget {
@@ -15,45 +17,73 @@ class _EmailChangePageState extends State<EmailChangePage> {
 
   Future<void> _changeEmail() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('email') ?? '';
+    final oldEmail = _oldEmailController.text.trim();
+    final newEmail = _newEmailController.text.trim();
+    final currentEmail = prefs.getString('email') ?? '';
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     setState(() {
       _successMsg = null;
+      _emailError = null;
     });
 
-    if (_oldEmailController.text.trim().isEmpty || _newEmailController.text.trim().isEmpty) {
+    if (oldEmail.isEmpty || newEmail.isEmpty) {
       setState(() {
         _emailError = 'Please fill all fields';
       });
       return;
     }
 
-    if (_oldEmailController.text.trim() != savedEmail) {
+    if (oldEmail != currentEmail) {
       setState(() {
         _emailError = 'Old email does not match current email';
       });
       return;
     }
 
-    if (_oldEmailController.text.trim() == _newEmailController.text.trim()) {
+    if (oldEmail == newEmail) {
       setState(() {
         _emailError = 'New email cannot be the same as old email';
       });
       return;
     }
 
-    await prefs.setString('email', _newEmailController.text.trim());
-    setState(() {
-      _emailError = null;
-      _successMsg = 'Email changed successfully!';
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Email changed successfully!', style: TextStyle(color: const Color.fromARGB(255, 56, 56, 56), fontWeight: FontWeight.bold),),
-      duration: Duration(seconds: 2),
-      backgroundColor: Colors.green,
-      behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
+    try {
+      await currentUser?.updateEmail(newEmail);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser?.uid)
+          .update({'email': newEmail});
+
+      await prefs.setString('email', newEmail);
+
+      setState(() {
+        _successMsg = 'Email changed successfully!';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Email changed successfully!',
+            style: TextStyle(
+              color: Color.fromARGB(255, 56, 56, 56),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
+    } catch (e) {
+      print('Email change error: $e');
+      setState(() {
+        _emailError = 'Failed to change email. It may already be in use.';
+      });
+    }
   }
 
   @override
@@ -80,7 +110,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
           ),
           Container(
             color: _isDarkMode
-                ? Colors.black.withOpacity(0.6)
+                ? Colors.black.withOpacity(0.5)
                 : Colors.white.withOpacity(0.7),
           ),
           Center(
@@ -99,7 +129,8 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     decoration: InputDecoration(
                       labelText: 'Old Email',
                       prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -108,25 +139,30 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     decoration: InputDecoration(
                       labelText: 'New Email',
                       prefixIcon: Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       errorText: _emailError,
                     ),
                   ),
                   SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _changeEmail,
-                    child: Text('Confirm Change', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text('Confirm Change',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(double.infinity, 48),
                       backgroundColor: Color.fromARGB(255, 47, 83, 179),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                   if (_successMsg != null) ...[
                     SizedBox(height: 16),
                     Text(
                       _successMsg!,
-                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.green, fontWeight: FontWeight.bold),
                     ),
                   ]
                 ],

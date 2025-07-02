@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'sql_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account.dart';
 import 'main.dart';
@@ -12,6 +13,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _avatarIndex = 0;
   String _username = 'My Account';
+  String _userId = '';
   final List<String> _avatars = [
     'assets/avatar1.webp',
     'assets/avatar2.webp',
@@ -21,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _entries = [];
   final TextEditingController _feelingController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
-  int? _editingId;
+  String? _editingId;
 
   Set<int> _expandedIndexes = {};
   int _selectedIndex = 0;
@@ -29,28 +31,40 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _refreshEntries();
-    _loadAvatar();
-    _loadUsername();
+    _initUserData();
   }
 
-  Future<void> _loadAvatar() async {
+  Future<void> _initUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final user = FirebaseAuth.instance.currentUser;
+
     setState(() {
       _avatarIndex = prefs.getInt('avatar_index') ?? 0;
-    });
-  }
-
-  Future<void> _loadUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
       _username = prefs.getString('username') ?? 'My Account';
+      _userId = user?.uid ?? '';
     });
+    _refreshEntries();
   }
 
   void _refreshEntries() async {
-    final data = await SQLHelper.getEntries();
-    setState(() => _entries = List<Map<String, dynamic>>.from(data));
+    if (_userId.isEmpty) return;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('entries')
+        .where('userId', isEqualTo: _userId)
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    setState(() {
+      _entries = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'feeling': data['feeling'],
+          'description': data['description'],
+          'createdAt': data['createdAt'],
+        };
+      }).toList();
+    });
   }
 
   void _showEntryModal({Map<String, dynamic>? entry}) {
@@ -86,13 +100,14 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 _editingId == null ? "New Diary" : "Edit Diary",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
               TextField(
                 controller: _feelingController,
                 decoration: InputDecoration(
-                  labelText: 'How are you feeling today?', labelStyle: TextStyle(fontStyle: FontStyle.italic),
+                  labelText: 'How are you feeling today?',
+                  labelStyle: TextStyle(fontStyle: FontStyle.italic),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -102,7 +117,8 @@ class _HomePageState extends State<HomePage> {
               TextField(
                 controller: _descController,
                 decoration: InputDecoration(
-                  labelText: 'What happened today?', labelStyle: TextStyle(fontStyle: FontStyle.italic),
+                  labelText: 'What happened today?',
+                  labelStyle: TextStyle(fontStyle: FontStyle.italic),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -121,18 +137,22 @@ class _HomePageState extends State<HomePage> {
                   if (_feelingController.text.trim().isEmpty ||
                       _descController.text.trim().isEmpty) return;
 
+                  final data = {
+                    'userId': _userId,
+                    'feeling': _feelingController.text.trim(),
+                    'description': _descController.text.trim(),
+                    'createdAt': DateTime.now().toIso8601String(),
+                  };
+
                   if (_editingId == null) {
-                    await SQLHelper.insertEntry(
-                      _feelingController.text.trim(),
-                      _descController.text.trim(),
-                    );
+                    await FirebaseFirestore.instance.collection('entries').add(data);
                   } else {
-                    await SQLHelper.updateEntry(
-                      _editingId!,
-                      _feelingController.text.trim(),
-                      _descController.text.trim(),
-                    );
+                    await FirebaseFirestore.instance
+                        .collection('entries')
+                        .doc(_editingId)
+                        .update(data);
                   }
+
                   _refreshEntries();
                   Navigator.pop(context);
                 },
@@ -151,8 +171,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _deleteEntry(int id) async {
-    await SQLHelper.deleteEntry(id);
+  Future<void> _deleteEntry(String id) async {
+    await FirebaseFirestore.instance.collection('entries').doc(id).delete();
     _refreshEntries();
   }
 
@@ -174,9 +194,9 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: _isDarkMode 
-          ? Colors.grey[900]?.withOpacity(0.8) 
-          : Colors.lightBlue.shade100.withOpacity(0.8),
+          backgroundColor: _isDarkMode
+              ? Colors.grey[900]?.withOpacity(0.8)
+              : Colors.lightBlue.shade100.withOpacity(0.8),
           elevation: 0,
           automaticallyImplyLeading: false,
           centerTitle: true,
@@ -188,7 +208,9 @@ class _HomePageState extends State<HomePage> {
               Text(
                 'MCR Diary',
                 style: TextStyle(
-                  color: _isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179),
+                  color: _isDarkMode
+                      ? Colors.white
+                      : Color.fromARGB(255, 47, 83, 179),
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                   letterSpacing: 1.2,
@@ -225,7 +247,8 @@ class _HomePageState extends State<HomePage> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => AccountPage()),
+                                MaterialPageRoute(
+                                    builder: (context) => AccountPage()),
                               );
                             },
                             child: CircleAvatar(
@@ -240,7 +263,7 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: _isDarkMode ? Colors.white : Colors.white,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -250,8 +273,11 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.only(right: 24),
                       child: IconButton(
                         icon: Icon(
-                          _isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
-                          color: _isDarkMode ? Colors.yellow : Colors.orange,
+                          _isDarkMode
+                              ? Icons.nightlight_round
+                              : Icons.wb_sunny,
+                          color:
+                              _isDarkMode ? Colors.yellow : Colors.orange,
                           size: 32,
                         ),
                         onPressed: () {
@@ -272,7 +298,9 @@ class _HomePageState extends State<HomePage> {
                             child: Text(
                               'No diary yet. Try add your story.',
                               style: TextStyle(
-                                color: _isDarkMode ? Colors.white70 : Colors.black,
+                                color: _isDarkMode
+                                    ? Colors.white70
+                                    : Colors.black,
                                 fontSize: 16,
                               ),
                             ),
@@ -294,12 +322,18 @@ class _HomePageState extends State<HomePage> {
                                   alignment: Alignment.centerRight,
                                   padding: EdgeInsets.symmetric(horizontal: 24),
                                   color: Colors.redAccent,
-                                  child: Icon(Icons.delete, color: Colors.white, size: 32),
+                                  child: Icon(Icons.delete,
+                                      color: Colors.white, size: 32),
                                 ),
                                 onDismissed: (direction) async {
-                                  final deletedEntry = Map<String, dynamic>.from(entry);
+                                  final deletedEntry =
+                                      Map<String, dynamic>.from(entry);
+                                  final entryId = deletedEntry['id'];
 
-                                  await SQLHelper.deleteEntry(entry['id']);
+                                  await FirebaseFirestore.instance
+                                  .collection('entries')
+                                  .doc(entryId)
+                                  .delete();
                                   _refreshEntries();
 
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -308,10 +342,15 @@ class _HomePageState extends State<HomePage> {
                                       action: SnackBarAction(
                                         label: 'UNDO',
                                         onPressed: () async {
-                                          await SQLHelper.insertEntry(
-                                            deletedEntry['feeling'],
-                                            deletedEntry['description'],
-                                          );
+                                          await FirebaseFirestore.instance
+                                          .collection('entries')
+                                          .doc(entryId)
+                                          .set({
+                                            'userId': deletedEntry['userId'],
+                                            'feeling': deletedEntry['feeling'],
+                                            'description': deletedEntry['description'],
+                                            'createdAt': deletedEntry['createdAt'],
+                                          });
                                           _refreshEntries();
                                         },
                                       ),
@@ -332,10 +371,14 @@ class _HomePageState extends State<HomePage> {
                                   child: Container(
                                     margin: EdgeInsets.symmetric(vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: _isDarkMode ? Colors.grey[850] : Colors.white.withOpacity(0.9),
+                                      color: _isDarkMode
+                                          ? Colors.grey[850]
+                                          : Colors.white.withOpacity(0.9),
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
-                                        BoxShadow(color: Colors.black12, blurRadius: 6),
+                                        BoxShadow(
+                                            color: Colors.black12,
+                                            blurRadius: 6),
                                       ],
                                     ),
                                     child: SizedBox(
@@ -343,7 +386,8 @@ class _HomePageState extends State<HomePage> {
                                       child: ListTile(
                                         contentPadding: EdgeInsets.all(16),
                                         title: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -355,7 +399,7 @@ class _HomePageState extends State<HomePage> {
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
-                                                SizedBox(width: 12,),
+                                                SizedBox(width: 12),
                                                 Text(
                                                   time,
                                                   style: TextStyle(
@@ -368,20 +412,25 @@ class _HomePageState extends State<HomePage> {
                                             ),
                                             SizedBox(height: 5),
                                             Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Expanded(
                                                   child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
                                                     children: [
                                                       Text(
                                                         entry['feeling'],
                                                         style: TextStyle(
                                                           fontSize: 18,
                                                           fontWeight: FontWeight.bold,
-                                                          color: _isDarkMode ? Colors.white : Colors.black,
+                                                          color: _isDarkMode
+                                                              ? Colors.white
+                                                              : Colors.black,
                                                         ),
-                                                        maxLines: isExpanded ? null : 1,
+                                                        maxLines:
+                                                            isExpanded ? null : 1,
                                                         overflow: isExpanded
                                                             ? TextOverflow.visible
                                                             : TextOverflow.ellipsis,
@@ -391,9 +440,12 @@ class _HomePageState extends State<HomePage> {
                                                         entry['description'],
                                                         style: TextStyle(
                                                           fontSize: 14,
-                                                          color: _isDarkMode ? Colors.white70 : Colors.black87,
+                                                          color: _isDarkMode
+                                                              ? Colors.white70
+                                                              : Colors.black87,
                                                         ),
-                                                        maxLines: isExpanded ? null : 1,
+                                                        maxLines:
+                                                            isExpanded ? null : 1,
                                                         overflow: isExpanded
                                                             ? TextOverflow.visible
                                                             : TextOverflow.ellipsis,
@@ -402,13 +454,19 @@ class _HomePageState extends State<HomePage> {
                                                   ),
                                                 ),
                                                 Padding(
-                                                  padding: const EdgeInsets.only(top: 0),
+                                                  padding:
+                                                      const EdgeInsets.only(top: 0),
                                                   child: IconButton(
                                                     icon: Icon(
                                                       Icons.edit,
-                                                      color: _isDarkMode ? Colors.lightBlueAccent : Color.fromARGB(255, 47, 83, 179),
+                                                      color: _isDarkMode
+                                                          ? Colors.lightBlueAccent
+                                                          : Color.fromARGB(
+                                                              255, 47, 83, 179),
                                                     ),
-                                                    onPressed: () => _showEntryModal(entry: entry),
+                                                    onPressed: () =>
+                                                        _showEntryModal(
+                                                            entry: entry),
                                                     tooltip: "Edit",
                                                   ),
                                                 ),
@@ -430,7 +488,8 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
+          backgroundColor:
+              Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
           onPressed: () => _showEntryModal(),
           child: Icon(Icons.add, color: Colors.white, size: 32),
           shape: RoundedRectangleBorder(
@@ -452,7 +511,9 @@ class _HomePageState extends State<HomePage> {
                     icon: Icon(
                       Icons.list_alt,
                       color: _selectedIndex == 0
-                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          ? (_isDarkMode
+                              ? Colors.white
+                              : Color.fromARGB(255, 47, 83, 179))
                           : Colors.grey,
                       size: 28,
                     ),
@@ -471,7 +532,9 @@ class _HomePageState extends State<HomePage> {
                     icon: Icon(
                       Icons.settings,
                       color: _selectedIndex == 1
-                          ? (_isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179))
+                          ? (_isDarkMode
+                              ? Colors.white
+                              : Color.fromARGB(255, 47, 83, 179))
                           : Colors.grey,
                       size: 28,
                     ),
