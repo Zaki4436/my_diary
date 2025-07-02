@@ -12,6 +12,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   int _avatarIndex = 0;
   String _username = 'My Account';
   String _userId = '';
@@ -167,380 +168,383 @@ class _HomePageState extends State<HomePage> {
 
     return Theme(
       data: _isDarkMode ? darkTheme : lightTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: _isDarkMode
-              ? Colors.grey[900]?.withOpacity(0.8)
-              : Colors.lightBlue.shade100.withOpacity(0.8),
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          centerTitle: true,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/logo.webp', height: 36),
-              SizedBox(width: 15),
-              Text(
-                'MCR Diary',
-                style: TextStyle(
-                  color: _isDarkMode
-                      ? Colors.white
-                      : Color.fromARGB(255, 47, 83, 179),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/background.jpg',
-                fit: BoxFit.cover,
-              ),
-            ),
-            if (_isDarkMode)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.5),
-                ),
-              ),
-            Column(
+      child: ScaffoldMessenger(
+        key: _scaffoldMessengerKey,
+        child: Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: _isDarkMode
+                ? Colors.grey[900]?.withOpacity(0.8)
+                : Colors.lightBlue.shade100.withOpacity(0.8),
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            centerTitle: true,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 100),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => AccountPage()),
-                              );
-                            },
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundImage: AssetImage(_avatars[_avatarIndex]),
-                              backgroundColor: Colors.grey.shade300,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            _username,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 24),
-                      child: IconButton(
-                        icon: Icon(
-                          _isDarkMode
-                              ? Icons.nightlight_round
-                              : Icons.wb_sunny,
-                          color:
-                              _isDarkMode ? Colors.yellow : Colors.orange,
-                          size: 32,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            isDarkMode.value = !isDarkMode.value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                Image.asset('assets/logo.webp', height: 36),
+                SizedBox(width: 15),
+                Text(
+                  'MCR Diary',
+                  style: TextStyle(
+                    color: _isDarkMode
+                        ? Colors.white
+                        : Color.fromARGB(255, 47, 83, 179),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-                SizedBox(height: 24),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _userId.isEmpty
-                        ? SizedBox.shrink()
-                        : StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('entries')
-                                .where('userId', isEqualTo: _userId)
-                                .orderBy('createdAt', descending: true)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              final docs = snapshot.data?.docs ?? [];
-                              if (docs.isEmpty) {
-                                return Center(
-                                  child: Text(
-                                    'No diary yet. Try add your story.',
-                                    style: TextStyle(
-                                      color: _isDarkMode ? Colors.white70 : Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
+              ],
+            ),
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/background.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              if (_isDarkMode)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ),
+              Column(
+                children: [
+                  SizedBox(height: 100),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 24),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => AccountPage()),
                                 );
-                              }
-                              return ListView.builder(
-                                itemCount: docs.length,
-                                itemBuilder: (context, index) {
-                                  final data = docs[index].data() as Map<String, dynamic>;
-                                  final createdAt = data['createdAt'];
-                                  String formattedDate = '';
-                                  if (createdAt is Timestamp) {
-                                    formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt.toDate());
-                                  } else if (createdAt is DateTime) {
-                                    formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt);
-                                  } else if (createdAt is String) {
-                                    formattedDate = createdAt;
-                                  }
-                                  final parts = formattedDate.split(',');
-                                  final date = parts.isNotEmpty ? parts[0] : '';
-                                  final time = parts.length > 1 ? parts[1].trim() : '';
-                                  final entry = {
-                                    'id': docs[index].id,
-                                    'feeling': data['feeling'],
-                                    'description': data['description'],
-                                    'createdAt': formattedDate,
-                                    'userId': data['userId'],
-                                  };
-                                  final isExpanded = _expandedIndexes.contains(index);
-
-                                  return Dismissible(
-                                    key: Key(entry['id'].toString()),
-                                    direction: DismissDirection.endToStart,
-                                    background: Container(
-                                      alignment: Alignment.centerRight,
-                                      padding: EdgeInsets.symmetric(horizontal: 24),
-                                      color: Colors.redAccent,
-                                      child: Icon(Icons.delete, color: Colors.white, size: 32),
+                              },
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                                backgroundColor: Colors.grey.shade300,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              _username,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 24),
+                        child: IconButton(
+                          icon: Icon(
+                            _isDarkMode
+                                ? Icons.nightlight_round
+                                : Icons.wb_sunny,
+                            color:
+                                _isDarkMode ? Colors.yellow : Colors.orange,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              isDarkMode.value = !isDarkMode.value;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _userId.isEmpty
+                          ? SizedBox.shrink()
+                          : StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('entries')
+                                  .where('userId', isEqualTo: _userId)
+                                  .orderBy('createdAt', descending: true)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                final docs = snapshot.data?.docs ?? [];
+                                if (docs.isEmpty) {
+                                  return Center(
+                                    child: Text(
+                                      'No diary yet. Try add your story.',
+                                      style: TextStyle(
+                                        color: _isDarkMode ? Colors.white70 : Colors.black,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                    onDismissed: (direction) async {
-                                      final deletedEntry = Map<String, dynamic>.from(entry);
-                                      final entryId = deletedEntry['id'];
+                                  );
+                                }
+                                return ListView.builder(
+                                  itemCount: docs.length,
+                                  itemBuilder: (context, index) {
+                                    final data = docs[index].data() as Map<String, dynamic>;
+                                    final createdAt = data['createdAt'];
+                                    String formattedDate = '';
+                                    if (createdAt is Timestamp) {
+                                      formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt.toDate());
+                                    } else if (createdAt is DateTime) {
+                                      formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt);
+                                    } else if (createdAt is String) {
+                                      formattedDate = createdAt;
+                                    }
+                                    final parts = formattedDate.split(',');
+                                    final date = parts.isNotEmpty ? parts[0] : '';
+                                    final time = parts.length > 1 ? parts[1].trim() : '';
+                                    final entry = {
+                                      'id': docs[index].id,
+                                      'feeling': data['feeling'],
+                                      'description': data['description'],
+                                      'createdAt': formattedDate,
+                                      'userId': data['userId'],
+                                    };
+                                    final isExpanded = _expandedIndexes.contains(index);
 
-                                      await FirebaseFirestore.instance
-                                          .collection('entries')
-                                          .doc(entryId)
-                                          .delete();
+                                    return Dismissible(
+                                      key: Key(entry['id'].toString()),
+                                      direction: DismissDirection.endToStart,
+                                      background: Container(
+                                        alignment: Alignment.centerRight,
+                                        padding: EdgeInsets.symmetric(horizontal: 24),
+                                        color: Colors.redAccent,
+                                        child: Icon(Icons.delete, color: Colors.white, size: 32),
+                                      ),
+                                      onDismissed: (direction) async {
+                                        final deletedEntry = Map<String, dynamic>.from(entry);
+                                        final entryId = deletedEntry['id'];
 
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Diary deleted'),
-                                          action: SnackBarAction(
-                                            label: 'UNDO',
-                                            onPressed: () async {
-                                              await FirebaseFirestore.instance
-                                                  .collection('entries')
-                                                  .doc(entryId)
-                                                  .set({
-                                                'userId': deletedEntry['userId'],
-                                                'feeling': deletedEntry['feeling'],
-                                                'description': deletedEntry['description'],
-                                                'createdAt': DateTime.now(),
-                                              });
-                                            },
-                                          ),
-                                          duration: Duration(seconds: 4),
-                                        ),
-                                      );
-                                    },
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          if (isExpanded) {
-                                            _expandedIndexes.remove(index);
-                                          } else {
-                                            _expandedIndexes.add(index);
-                                          }
-                                        });
-                                      },
-                                      child: Container(
-                                        margin: EdgeInsets.symmetric(vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: _isDarkMode
-                                              ? Colors.grey[850]
-                                              : Colors.white.withOpacity(0.9),
-                                          borderRadius: BorderRadius.circular(16),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              blurRadius: 6,
+                                        await FirebaseFirestore.instance
+                                            .collection('entries')
+                                            .doc(entryId)
+                                            .delete();
+
+                                        _scaffoldMessengerKey.currentState?.showSnackBar(
+                                          SnackBar(
+                                            content: Text('Diary deleted'),
+                                            action: SnackBarAction(
+                                              label: 'UNDO',
+                                              onPressed: () async {
+                                                await FirebaseFirestore.instance
+                                                    .collection('entries')
+                                                    .doc(entryId)
+                                                    .set({
+                                                  'userId': deletedEntry['userId'],
+                                                  'feeling': deletedEntry['feeling'],
+                                                  'description': deletedEntry['description'],
+                                                  'createdAt': DateTime.now(),
+                                                });
+                                              },
                                             ),
-                                          ],
-                                        ),
-                                        child: SizedBox(
-                                          height: isExpanded ? null : 130,
-                                          child: ListTile(
-                                            contentPadding: EdgeInsets.all(16),
-                                            title: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      date,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        color: Colors.grey,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 12),
-                                                    Text(
-                                                      time,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        color: Colors.grey,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                SizedBox(height: 5),
-                                                Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          Text(
-                                                            entry['feeling'],
-                                                            style: TextStyle(
-                                                              fontSize: 18,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: _isDarkMode
-                                                                  ? Colors.white
-                                                                  : Colors.black,
-                                                            ),
-                                                            maxLines: isExpanded ? null : 1,
-                                                            overflow: isExpanded
-                                                                ? TextOverflow.visible
-                                                                : TextOverflow.ellipsis,
-                                                          ),
-                                                          SizedBox(height: 9),
-                                                          Text(
-                                                            entry['description'],
-                                                            style: TextStyle(
-                                                              fontSize: 14,
-                                                              color: _isDarkMode
-                                                                  ? Colors.white70
-                                                                  : Colors.black87,
-                                                            ),
-                                                            maxLines: isExpanded ? null : 1,
-                                                            overflow: isExpanded
-                                                                ? TextOverflow.visible
-                                                                : TextOverflow.ellipsis,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(top: 0),
-                                                      child: IconButton(
-                                                        icon: Icon(
-                                                          Icons.edit,
-                                                          color: _isDarkMode
-                                                              ? Colors.lightBlueAccent
-                                                              : Color.fromARGB(255, 47, 83, 179),
+                                            duration: Duration(seconds: 4),
+                                          ),
+                                        );
+                                      },
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (isExpanded) {
+                                              _expandedIndexes.remove(index);
+                                            } else {
+                                              _expandedIndexes.add(index);
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          margin: EdgeInsets.symmetric(vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: _isDarkMode
+                                                ? Colors.grey[850]
+                                                : Colors.white.withOpacity(0.9),
+                                            borderRadius: BorderRadius.circular(16),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 6,
+                                              ),
+                                            ],
+                                          ),
+                                          child: SizedBox(
+                                            height: isExpanded ? null : 130,
+                                            child: ListTile(
+                                              contentPadding: EdgeInsets.all(16),
+                                              title: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        date,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          color: Colors.grey,
+                                                          fontWeight: FontWeight.w500,
                                                         ),
-                                                        onPressed: () => _showEntryModal(entry: entry),
-                                                        tooltip: "Edit",
                                                       ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
+                                                      SizedBox(width: 12),
+                                                      Text(
+                                                        time,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          color: Colors.grey,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 5),
+                                                  Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              entry['feeling'],
+                                                              style: TextStyle(
+                                                                fontSize: 18,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: _isDarkMode
+                                                                    ? Colors.white
+                                                                    : Colors.black,
+                                                              ),
+                                                              maxLines: isExpanded ? null : 1,
+                                                              overflow: isExpanded
+                                                                  ? TextOverflow.visible
+                                                                  : TextOverflow.ellipsis,
+                                                            ),
+                                                            SizedBox(height: 9),
+                                                            Text(
+                                                              entry['description'],
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                color: _isDarkMode
+                                                                    ? Colors.white70
+                                                                    : Colors.black87,
+                                                              ),
+                                                              maxLines: isExpanded ? null : 1,
+                                                              overflow: isExpanded
+                                                                  ? TextOverflow.visible
+                                                                  : TextOverflow.ellipsis,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(top: 0),
+                                                        child: IconButton(
+                                                          icon: Icon(
+                                                            Icons.edit,
+                                                            color: _isDarkMode
+                                                                ? Colors.lightBlueAccent
+                                                                : Color.fromARGB(255, 47, 83, 179),
+                                                          ),
+                                                          onPressed: () => _showEntryModal(entry: entry),
+                                                          tooltip: "Edit",
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                )
-              ],
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor:
-              Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
-          onPressed: () => _showEntryModal(),
-          child: Icon(Icons.add, color: Colors.white, size: 32),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  )
+                ],
+              ),
+            ],
           ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: BottomAppBar(
-          color: _isDarkMode ? Colors.grey[900] : Colors.white,
-          shape: CircularNotchedRectangle(),
-          notchMargin: 8,
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.list_alt,
-                      color: _selectedIndex == 0
-                          ? (_isDarkMode
-                              ? Colors.white
-                              : Color.fromARGB(255, 47, 83, 179))
-                          : Colors.grey,
-                      size: 28,
+          floatingActionButton: FloatingActionButton(
+            backgroundColor:
+                Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
+            onPressed: () => _showEntryModal(),
+            child: Icon(Icons.add, color: Colors.white, size: 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          bottomNavigationBar: BottomAppBar(
+            color: _isDarkMode ? Colors.grey[900] : Colors.white,
+            shape: CircularNotchedRectangle(),
+            notchMargin: 8,
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.list_alt,
+                        color: _selectedIndex == 0
+                            ? (_isDarkMode
+                                ? Colors.white
+                                : Color.fromARGB(255, 47, 83, 179))
+                            : Colors.grey,
+                        size: 28,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedIndex = 0;
+                        });
+                      },
+                      tooltip: "View All",
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _selectedIndex = 0;
-                      });
-                    },
-                    tooltip: "View All",
                   ),
-                ),
-                Spacer(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.settings,
-                      color: _selectedIndex == 1
-                          ? (_isDarkMode
-                              ? Colors.white
-                              : Color.fromARGB(255, 47, 83, 179))
-                          : Colors.grey,
-                      size: 28,
+                  Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.settings,
+                        color: _selectedIndex == 1
+                            ? (_isDarkMode
+                                ? Colors.white
+                                : Color.fromARGB(255, 47, 83, 179))
+                            : Colors.grey,
+                        size: 28,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedIndex = 1;
+                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AccountPage()),
+                        );
+                      },
+                      tooltip: "Settings",
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _selectedIndex = 1;
-                      });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AccountPage()),
-                      );
-                    },
-                    tooltip: "Settings",
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
