@@ -12,13 +12,15 @@ class EmailChangePage extends StatefulWidget {
 class _EmailChangePageState extends State<EmailChangePage> {
   final _oldEmailController = TextEditingController();
   final _newEmailController = TextEditingController();
+  final _passwordController = TextEditingController();
   String? _emailError;
   String? _successMsg;
 
   Future<void> _changeEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final oldEmail = _oldEmailController.text.trim();
-    final newEmail = _newEmailController.text.trim();
+    final newEmail = _newEmailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
     final currentEmail = prefs.getString('email') ?? '';
     final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -27,7 +29,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
       _emailError = null;
     });
 
-    if (oldEmail.isEmpty || newEmail.isEmpty) {
+    if (oldEmail.isEmpty || newEmail.isEmpty || password.isEmpty) {
       setState(() {
         _emailError = 'Please fill all fields';
       });
@@ -49,39 +51,35 @@ class _EmailChangePageState extends State<EmailChangePage> {
     }
 
     try {
-      await currentUser?.updateEmail(newEmail);
+      // Re-authenticate user
+      final cred = EmailAuthProvider.credential(email: oldEmail, password: password);
+      await currentUser?.reauthenticateWithCredential(cred);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser?.uid)
-          .update({'email': newEmail});
-
-      await prefs.setString('email', newEmail);
+      // Send verification before updating email
+      await currentUser?.verifyBeforeUpdateEmail(newEmail);
 
       setState(() {
-        _successMsg = 'Email changed successfully!';
+        _successMsg = 'Verification email sent to new address. Please check your inbox.';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Email changed successfully!',
+            'Verification email sent. Check your inbox.',
             style: TextStyle(
               color: Color.fromARGB(255, 56, 56, 56),
               fontWeight: FontWeight.bold,
             ),
           ),
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 3),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
       );
-
-      Navigator.of(context).pushNamedAndRemoveUntil('/account', (route) => false);
     } catch (e) {
       print('Email change error: $e');
       setState(() {
-        _emailError = 'Failed to change email. It may already be in use.';
+        _emailError = 'Failed to change email. Make sure password is correct and new email is valid.';
       });
     }
   }
@@ -120,7 +118,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Enter your old email and new email',
+                    'Enter your old email, new email, and password',
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(height: 16),
@@ -142,6 +140,17 @@ class _EmailChangePageState extends State<EmailChangePage> {
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
                       errorText: _emailError,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   SizedBox(height: 24),

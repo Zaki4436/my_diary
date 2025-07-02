@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final db = FirebaseFirestore.instance;
 
@@ -93,6 +94,11 @@ class SQLHelper {
 
     await deleteAllUserEntries();
     await db.collection('users').doc(userId).delete();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.delete();
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

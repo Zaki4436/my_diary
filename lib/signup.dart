@@ -42,7 +42,7 @@ class _SignUpPageState extends State<SignUpPage> {
       });
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('uid', uid);
+      await prefs.setString('userId', uid);
       await prefs.setString('username', username);
       await prefs.setString('email', email);
       await prefs.setString('password', password);

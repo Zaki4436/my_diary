@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account.dart';
 import 'main.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -20,7 +21,6 @@ class _HomePageState extends State<HomePage> {
     'assets/avatar3.webp',
   ];
 
-  List<Map<String, dynamic>> _entries = [];
   final TextEditingController _feelingController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   String? _editingId;
@@ -42,28 +42,6 @@ class _HomePageState extends State<HomePage> {
       _avatarIndex = prefs.getInt('avatar_index') ?? 0;
       _username = prefs.getString('username') ?? 'My Account';
       _userId = user?.uid ?? '';
-    });
-    _refreshEntries();
-  }
-
-  void _refreshEntries() async {
-    if (_userId.isEmpty) return;
-    final snapshot = await FirebaseFirestore.instance
-        .collection('entries')
-        .where('userId', isEqualTo: _userId)
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    setState(() {
-      _entries = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': doc.id,
-          'feeling': data['feeling'],
-          'description': data['description'],
-          'createdAt': data['createdAt'],
-        };
-      }).toList();
     });
   }
 
@@ -141,7 +119,7 @@ class _HomePageState extends State<HomePage> {
                     'userId': _userId,
                     'feeling': _feelingController.text.trim(),
                     'description': _descController.text.trim(),
-                    'createdAt': DateTime.now().toIso8601String(),
+                    'createdAt': DateTime.now(),
                   };
 
                   if (_editingId == null) {
@@ -153,7 +131,6 @@ class _HomePageState extends State<HomePage> {
                         .update(data);
                   }
 
-                  _refreshEntries();
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
@@ -173,7 +150,6 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _deleteEntry(String id) async {
     await FirebaseFirestore.instance.collection('entries').doc(id).delete();
-    _refreshEntries();
   }
 
   @override
@@ -293,196 +269,210 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: _entries.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No diary yet. Try add your story.',
-                              style: TextStyle(
-                                color: _isDarkMode
-                                    ? Colors.white70
-                                    : Colors.black,
-                                fontSize: 16,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _entries.length,
-                            itemBuilder: (context, index) {
-                              final entry = _entries[index];
-                              final createdAt = entry['createdAt'] ?? '';
-                              final parts = createdAt.split(',');
-                              final date = parts.isNotEmpty ? parts[0] : '';
-                              final time = parts.length > 1 ? parts[1].trim() : '';
-                              final isExpanded = _expandedIndexes.contains(index);
+                    child: _userId.isEmpty
+                        ? SizedBox.shrink()
+                        : StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('entries')
+                                .where('userId', isEqualTo: _userId)
+                                .orderBy('createdAt', descending: true)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              final docs = snapshot.data?.docs ?? [];
+                              if (docs.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    'No diary yet. Try add your story.',
+                                    style: TextStyle(
+                                      color: _isDarkMode ? Colors.white70 : Colors.black,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                itemCount: docs.length,
+                                itemBuilder: (context, index) {
+                                  final data = docs[index].data() as Map<String, dynamic>;
+                                  final createdAt = data['createdAt'];
+                                  String formattedDate = '';
+                                  if (createdAt is Timestamp) {
+                                    formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt.toDate());
+                                  } else if (createdAt is DateTime) {
+                                    formattedDate = DateFormat('d MMMM yyyy, h:mm a').format(createdAt);
+                                  } else if (createdAt is String) {
+                                    formattedDate = createdAt;
+                                  }
+                                  final parts = formattedDate.split(',');
+                                  final date = parts.isNotEmpty ? parts[0] : '';
+                                  final time = parts.length > 1 ? parts[1].trim() : '';
+                                  final entry = {
+                                    'id': docs[index].id,
+                                    'feeling': data['feeling'],
+                                    'description': data['description'],
+                                    'createdAt': formattedDate,
+                                    'userId': data['userId'],
+                                  };
+                                  final isExpanded = _expandedIndexes.contains(index);
 
-                              return Dismissible(
-                                key: Key(entry['id'].toString()),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: EdgeInsets.symmetric(horizontal: 24),
-                                  color: Colors.redAccent,
-                                  child: Icon(Icons.delete,
-                                      color: Colors.white, size: 32),
-                                ),
-                                onDismissed: (direction) async {
-                                  final deletedEntry =
-                                      Map<String, dynamic>.from(entry);
-                                  final entryId = deletedEntry['id'];
+                                  return Dismissible(
+                                    key: Key(entry['id'].toString()),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: Alignment.centerRight,
+                                      padding: EdgeInsets.symmetric(horizontal: 24),
+                                      color: Colors.redAccent,
+                                      child: Icon(Icons.delete, color: Colors.white, size: 32),
+                                    ),
+                                    onDismissed: (direction) async {
+                                      final deletedEntry = Map<String, dynamic>.from(entry);
+                                      final entryId = deletedEntry['id'];
 
-                                  await FirebaseFirestore.instance
-                                  .collection('entries')
-                                  .doc(entryId)
-                                  .delete();
-                                  _refreshEntries();
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Diary deleted'),
-                                      action: SnackBarAction(
-                                        label: 'UNDO',
-                                        onPressed: () async {
-                                          await FirebaseFirestore.instance
+                                      await FirebaseFirestore.instance
                                           .collection('entries')
                                           .doc(entryId)
-                                          .set({
-                                            'userId': deletedEntry['userId'],
-                                            'feeling': deletedEntry['feeling'],
-                                            'description': deletedEntry['description'],
-                                            'createdAt': deletedEntry['createdAt'],
-                                          });
-                                          _refreshEntries();
-                                        },
-                                      ),
-                                      duration: Duration(seconds: 4),
-                                    ),
-                                  );
-                                },
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (isExpanded) {
-                                        _expandedIndexes.remove(index);
-                                      } else {
-                                        _expandedIndexes.add(index);
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    margin: EdgeInsets.symmetric(vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _isDarkMode
-                                          ? Colors.grey[850]
-                                          : Colors.white.withOpacity(0.9),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: Colors.black12,
-                                            blurRadius: 6),
-                                      ],
-                                    ),
-                                    child: SizedBox(
-                                      height: isExpanded ? null : 130,
-                                      child: ListTile(
-                                        contentPadding: EdgeInsets.all(16),
-                                        title: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  date,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.grey,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                                SizedBox(width: 12),
-                                                Text(
-                                                  time,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.grey,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            SizedBox(height: 5),
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        entry['feeling'],
-                                                        style: TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: _isDarkMode
-                                                              ? Colors.white
-                                                              : Colors.black,
-                                                        ),
-                                                        maxLines:
-                                                            isExpanded ? null : 1,
-                                                        overflow: isExpanded
-                                                            ? TextOverflow.visible
-                                                            : TextOverflow.ellipsis,
-                                                      ),
-                                                      SizedBox(height: 9),
-                                                      Text(
-                                                        entry['description'],
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                          color: _isDarkMode
-                                                              ? Colors.white70
-                                                              : Colors.black87,
-                                                        ),
-                                                        maxLines:
-                                                            isExpanded ? null : 1,
-                                                        overflow: isExpanded
-                                                            ? TextOverflow.visible
-                                                            : TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(top: 0),
-                                                  child: IconButton(
-                                                    icon: Icon(
-                                                      Icons.edit,
-                                                      color: _isDarkMode
-                                                          ? Colors.lightBlueAccent
-                                                          : Color.fromARGB(
-                                                              255, 47, 83, 179),
-                                                    ),
-                                                    onPressed: () =>
-                                                        _showEntryModal(
-                                                            entry: entry),
-                                                    tooltip: "Edit",
-                                                  ),
-                                                ),
-                                              ],
+                                          .delete();
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Diary deleted'),
+                                          action: SnackBarAction(
+                                            label: 'UNDO',
+                                            onPressed: () async {
+                                              await FirebaseFirestore.instance
+                                                  .collection('entries')
+                                                  .doc(entryId)
+                                                  .set({
+                                                'userId': deletedEntry['userId'],
+                                                'feeling': deletedEntry['feeling'],
+                                                'description': deletedEntry['description'],
+                                                'createdAt': DateTime.now(),
+                                              });
+                                            },
+                                          ),
+                                          duration: Duration(seconds: 4),
+                                        ),
+                                      );
+                                    },
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          if (isExpanded) {
+                                            _expandedIndexes.remove(index);
+                                          } else {
+                                            _expandedIndexes.add(index);
+                                          }
+                                        });
+                                      },
+                                      child: Container(
+                                        margin: EdgeInsets.symmetric(vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: _isDarkMode
+                                              ? Colors.grey[850]
+                                              : Colors.white.withOpacity(0.9),
+                                          borderRadius: BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 6,
                                             ),
                                           ],
                                         ),
+                                        child: SizedBox(
+                                          height: isExpanded ? null : 130,
+                                          child: ListTile(
+                                            contentPadding: EdgeInsets.all(16),
+                                            title: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      date,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        color: Colors.grey,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 12),
+                                                    Text(
+                                                      time,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        color: Colors.grey,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(height: 5),
+                                                Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            entry['feeling'],
+                                                            style: TextStyle(
+                                                              fontSize: 18,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: _isDarkMode
+                                                                  ? Colors.white
+                                                                  : Colors.black,
+                                                            ),
+                                                            maxLines: isExpanded ? null : 1,
+                                                            overflow: isExpanded
+                                                                ? TextOverflow.visible
+                                                                : TextOverflow.ellipsis,
+                                                          ),
+                                                          SizedBox(height: 9),
+                                                          Text(
+                                                            entry['description'],
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              color: _isDarkMode
+                                                                  ? Colors.white70
+                                                                  : Colors.black87,
+                                                            ),
+                                                            maxLines: isExpanded ? null : 1,
+                                                            overflow: isExpanded
+                                                                ? TextOverflow.visible
+                                                                : TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(top: 0),
+                                                      child: IconButton(
+                                                        icon: Icon(
+                                                          Icons.edit,
+                                                          color: _isDarkMode
+                                                              ? Colors.lightBlueAccent
+                                                              : Color.fromARGB(255, 47, 83, 179),
+                                                        ),
+                                                        onPressed: () => _showEntryModal(entry: entry),
+                                                        tooltip: "Edit",
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               );
                             },
                           ),
                   ),
-                ),
+                )
               ],
             ),
           ],

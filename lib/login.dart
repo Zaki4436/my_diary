@@ -28,14 +28,13 @@ class _LoginPageState extends State<LoginPage> {
       );
       final uid = userCredential.user!.uid;
 
-      // Fetch user profile from Firestore
       final snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final user = snapshot.data();
 
       if (user == null) throw Exception('User profile not found');
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('uid', uid);
+      await prefs.setString('userId', uid);
       await prefs.setString('email', email);
       await prefs.setString('username', user['username'] ?? 'My Account');
       await prefs.setString('password', password);
