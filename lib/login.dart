@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_diary/main.dart';
 
 class LoginPage extends StatefulWidget {
@@ -49,6 +50,51 @@ class _LoginPageState extends State<LoginPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      await GoogleSignIn().signOut(); // Force logout Google session
+
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) return;
+
+      final uid = user.uid;
+      final prefs = await SharedPreferences.getInstance();
+
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!doc.exists) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'username': user.displayName ?? '',
+          'email': user.email ?? '',
+          'avatarIndex': 0,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      }
+
+      await prefs.setString('userId', uid);
+      await prefs.setString('username', user.displayName ?? '');
+      await prefs.setString('email', user.email ?? '');
+      await prefs.setInt('avatar_index', 0);
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      print('Google Sign-In failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
       );
     }
   }
@@ -144,6 +190,30 @@ class _LoginPageState extends State<LoginPage> {
                         minimumSize: Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         backgroundColor: const Color.fromARGB(255, 47, 83, 179),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _signInWithGoogle,
+                      icon: Image.asset(
+                        'assets/google.png',
+                        height: 24,
+                        width: 24,
+                      ),
+                      label: Text(
+                        "Sign in with Google",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 48),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: Colors.grey),
+                        ),
                       ),
                     ),
                     Row(

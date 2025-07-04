@@ -95,7 +95,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text('Change Password', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color.fromARGB(255, 47, 83, 179).withOpacity(0.8),
+        backgroundColor: const Color.fromARGB(255, 47, 83, 179),
         iconTheme: IconThemeData(color: Colors.white),
         elevation: 0,
       ),
