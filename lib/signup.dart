@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:io';
 import 'main.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -14,14 +16,18 @@ class _SignUpPageState extends State<SignUpPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
-
-  final List<String> _avatars = [
-    'assets/avatar1.webp',
-    'assets/avatar2.webp',
-    'assets/avatar3.webp',
-  ];
-  int _selectedAvatar = 0;
   bool _obscurePassword = true;
+  File? _profileImage;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
 
   Future<void> _signup(BuildContext context) async {
     final username = _usernameController.text.trim();
@@ -38,7 +44,6 @@ class _SignUpPageState extends State<SignUpPage> {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'username': username,
         'email': email,
-        'avatarIndex': _selectedAvatar,
         'createdAt': DateTime.now().toIso8601String(),
       });
 
@@ -47,7 +52,6 @@ class _SignUpPageState extends State<SignUpPage> {
       await prefs.setString('username', username);
       await prefs.setString('email', email);
       await prefs.setString('password', password);
-      await prefs.setInt('avatar_index', _selectedAvatar);
 
       Navigator.pushNamed(context, '/home');
     } catch (e) {
@@ -60,6 +64,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _signInWithGoogle() async {
     try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
 
@@ -86,7 +93,6 @@ class _SignUpPageState extends State<SignUpPage> {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'username': user.displayName ?? '',
           'email': user.email ?? '',
-          'avatarIndex': 0,
           'createdAt': DateTime.now().toIso8601String(),
         });
       }
@@ -94,7 +100,7 @@ class _SignUpPageState extends State<SignUpPage> {
       await prefs.setString('userId', uid);
       await prefs.setString('username', user.displayName ?? '');
       await prefs.setString('email', user.email ?? '');
-      await prefs.setInt('avatar_index', 0);
+      await prefs.setString('avatar_url', user.photoURL ?? '');
 
       Navigator.pushNamed(context, '/home');
     } catch (e) {
@@ -136,44 +142,20 @@ class _SignUpPageState extends State<SignUpPage> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    const SizedBox(height: 16),
-                    Text(
-                      "Choose Avatar",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 25,
-                        color: isDark ? Colors.white : Colors.black,
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : AssetImage('assets/avatar1.webp') as ImageProvider,
+                        backgroundColor: Colors.grey[300],
                       ),
                     ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_avatars.length, (index) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedAvatar = index;
-                            });
-                          },
-                          child: Container(
-                            margin: EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _selectedAvatar == index
-                                    ? Color.fromARGB(255, 47, 83, 179)
-                                    : Colors.transparent,
-                                width: 3,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 30,
-                              backgroundImage: AssetImage(_avatars[index]),
-                              backgroundColor: Colors.grey[200],
-                            ),
-                          ),
-                        );
-                      }),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tap to select profile image',
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black),
                     ),
                     const SizedBox(height: 32),
                     TextField(
@@ -237,7 +219,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       label: Text(
                         "Sign up with Google",
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
+                          color: isDark ? Colors.black : Colors.black,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

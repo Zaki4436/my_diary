@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signInWithGoogle() async {
     try {
-      await GoogleSignIn().signOut(); // Force logout Google session
+      await GoogleSignIn().signOut();
 
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
@@ -81,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
           'username': user.displayName ?? '',
           'email': user.email ?? '',
           'avatarIndex': 0,
+          'avatarUrl': user.photoURL ?? '',
           'createdAt': DateTime.now().toIso8601String(),
         });
       }
@@ -89,6 +90,7 @@ class _LoginPageState extends State<LoginPage> {
       await prefs.setString('username', user.displayName ?? '');
       await prefs.setString('email', user.email ?? '');
       await prefs.setInt('avatar_index', 0);
+      await prefs.setString('avatar_url', user.photoURL ?? '');
 
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {

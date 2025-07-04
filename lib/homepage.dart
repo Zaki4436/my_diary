@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'account.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 
 class HomePage extends StatefulWidget {
   @override
@@ -13,14 +14,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-  int _avatarIndex = 0;
+  String _avatarUrl = '';
   String _username = 'My Account';
   String _userId = '';
-  final List<String> _avatars = [
-    'assets/avatar1.webp',
-    'assets/avatar2.webp',
-    'assets/avatar3.webp',
-  ];
 
   final TextEditingController _feelingController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -40,7 +36,7 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
 
     setState(() {
-      _avatarIndex = prefs.getInt('avatar_index') ?? 0;
+      _avatarUrl = prefs.getString('avatar_url') ?? '';
       _username = prefs.getString('username') ?? 'My Account';
       _userId = user?.uid ?? '';
     });
@@ -232,7 +228,11 @@ class _HomePageState extends State<HomePage> {
                               },
                               child: CircleAvatar(
                                 radius: 20,
-                                backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                                backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                                    ? (_avatarUrl!.startsWith('http')
+                                        ? NetworkImage(_avatarUrl!)
+                                        : FileImage(File(_avatarUrl!)) as ImageProvider)
+                                    : AssetImage('assets/avatar1.webp'),
                                 backgroundColor: Colors.grey.shade300,
                               ),
                             ),
@@ -486,8 +486,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor:
-                Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
+            backgroundColor: Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
             onPressed: () => _showEntryModal(),
             child: Icon(Icons.add, color: Colors.white, size: 32),
             shape: RoundedRectangleBorder(

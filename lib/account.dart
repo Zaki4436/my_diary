@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
 import 'password_change.dart';
 import 'email_change.dart';
 import 'main.dart';
@@ -16,13 +19,7 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  int _avatarIndex = 0;
-  final List<String> _avatars = [
-    'assets/avatar1.webp',
-    'assets/avatar2.webp',
-    'assets/avatar3.webp',
-  ];
-
+  String _avatarUrl = '';
   String _username = 'My Account';
   String _email = 'test@example.com';
   String _password = '';
@@ -37,25 +34,10 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _avatarIndex = prefs.getInt('avatar_index') ?? 0;
+      _avatarUrl = prefs.getString('avatar_url') ?? '';
       _username = prefs.getString('username') ?? 'My Account';
       _email = prefs.getString('email') ?? 'test@example.com';
       _password = prefs.getString('password') ?? '';
-    });
-  }
-
-  Future<void> _updateAvatar(int index) async {
-    final prefs = await SharedPreferences.getInstance();
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    await prefs.setInt('avatar_index', index);
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'avatarIndex': index,
-    });
-
-    setState(() {
-      _avatarIndex = index;
     });
   }
 
@@ -72,43 +54,6 @@ class _AccountPageState extends State<AccountPage> {
     setState(() {
       _username = username;
     });
-  }
-
-  void _showChangeAvatarDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Choose New Avatar'),
-        content: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_avatars.length, (index) {
-            return GestureDetector(
-              onTap: () {
-                _updateAvatar(index);
-                Navigator.pop(context);
-              },
-              child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _avatarIndex == index
-                        ? Color.fromARGB(255, 47, 83, 179)
-                        : Colors.transparent,
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 30,
-                  backgroundImage: AssetImage(_avatars[index]),
-                  backgroundColor: Colors.grey[200],
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
   }
 
   void _showChangeUsernameDialog() {
@@ -174,6 +119,28 @@ class _AccountPageState extends State<AccountPage> {
         SnackBar(content: Text('Error deleting account: ${e.toString()}')),
       );
     }
+  }
+
+  Future<void> _pickNewAvatar() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    if (picked == null) return;
+
+    final path = picked.path;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('avatar_url', path);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'avatar_url': path,
+      });
+    }
+
+    setState(() {
+      _avatarUrl = path;
+    });
   }
 
   @override
@@ -251,10 +218,14 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 SizedBox(height: 10),
                 GestureDetector(
-                  onTap: _showChangeAvatarDialog,
+                  onTap: _pickNewAvatar,
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: AssetImage(_avatars[_avatarIndex]),
+                    backgroundImage: _avatarUrl.startsWith('http')
+                        ? NetworkImage(_avatarUrl)
+                        : _avatarUrl.isNotEmpty
+                            ? FileImage(File(_avatarUrl)) as ImageProvider
+                            : AssetImage('assets/avatar1.webp'),
                     backgroundColor: Colors.grey[200],
                   ),
                 ),
