@@ -5,23 +5,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_diary/main.dart';
 
+
+// Main login page
 class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // Controllers for email and password input
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
+  // State variables for password visibility and error handling
   bool _obscurePassword = true;
   bool _emailError = false;
   bool _passError = false;
 
+  // Function to handle manual login
   Future<void> _login(BuildContext context) async {
     final email = _emailController.text.trim();
     final password = _passController.text.trim();
 
     try {
+      // Authenticate user with Firebase
       final auth = FirebaseAuth.instance;
       final userCredential = await auth.signInWithEmailAndPassword(
         email: email,
@@ -29,11 +35,13 @@ class _LoginPageState extends State<LoginPage> {
       );
       final uid = userCredential.user!.uid;
 
+      // Fetch user profile from Firestore
       final snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final user = snapshot.data();
 
       if (user == null) throw Exception('User profile not found');
 
+      // Save user data to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('userId', uid);
       await prefs.setString('email', email);
@@ -54,15 +62,20 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // Function to handle Google Sign-In
   Future<void> _signInWithGoogle() async {
     try {
+      // Sign out any previous Google sign-in to avoid auto login
       await GoogleSignIn().signOut();
 
+      // Choose Google account to sign in
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
 
+      // Get authentication details from Google
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
+      // Create a new credential for Firebase
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -75,7 +88,9 @@ class _LoginPageState extends State<LoginPage> {
       final uid = user.uid;
       final prefs = await SharedPreferences.getInstance();
 
+      // Check if user profile exists in Firestore
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      // If not, create a new profile
       if (!doc.exists) {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'username': user.displayName ?? '',
@@ -86,6 +101,7 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
 
+      // Save user data to SharedPreferences
       await prefs.setString('userId', uid);
       await prefs.setString('username', user.displayName ?? '');
       await prefs.setString('email', user.email ?? '');
@@ -94,6 +110,7 @@ class _LoginPageState extends State<LoginPage> {
 
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
+      // Handle Google Sign-In errors
       print('Google Sign-In failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
@@ -145,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     SizedBox(height: 20),
                     Text(
-                      "Welcome To MCR Diary",
+                      "Welcome To My Diary",
                       style: TextStyle(
                         color: Color.fromARGB(255, 47, 83, 179),
                         fontSize: 24,
@@ -153,6 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     SizedBox(height: 20),
+                    // Input fields for email
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
@@ -163,6 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     SizedBox(height: 16),
+                    // Input fields for password
                     TextField(
                       controller: _passController,
                       obscureText: _obscurePassword,
@@ -171,6 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                         prefixIcon: Icon(Icons.lock),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         errorText: _passError ? 'Wrong email or password' : null,
+                        // Toggle password visibility
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_off : Icons.visibility,

@@ -13,12 +13,14 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  // Controllers for input user
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
   bool _obscurePassword = true;
   File? _profileImage;
 
+  // Function to pick image from gallery
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -29,24 +31,29 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  // Function for user manually signup
   Future<void> _signup(BuildContext context) async {
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passController.text.trim();
 
+    // Check if any field is empty
     if (username.isEmpty || email.isEmpty || password.isEmpty) return;
 
     try {
+      // Create account in firebase auth
       final userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
       final uid = userCredential.user!.uid;
 
+      // Store user data in Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'username': username,
         'email': email,
         'createdAt': DateTime.now().toIso8601String(),
       });
 
+      // Save user data in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('userId', uid);
       await prefs.setString('username', username);
@@ -55,6 +62,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
       Navigator.pushNamed(context, '/home');
     } catch (e) {
+      // Show error message if signup failed
       print('Signup failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Signup failed: ${e.toString()}')),
@@ -62,10 +70,12 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  // Function for Google Sign-In
   Future<void> _signInWithGoogle() async {
     try {
       final googleSignIn = GoogleSignIn();
-      await googleSignIn.signOut();
+      // Sign out any previous Google sign-in to avoid auto login
+      await googleSignIn.signOut(); 
 
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
@@ -84,6 +94,7 @@ class _SignUpPageState extends State<SignUpPage> {
       final uid = user.uid;
       final prefs = await SharedPreferences.getInstance();
 
+      // Save new user to Firestore
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -97,6 +108,7 @@ class _SignUpPageState extends State<SignUpPage> {
         });
       }
 
+      // Save user data
       await prefs.setString('userId', uid);
       await prefs.setString('username', user.displayName ?? '');
       await prefs.setString('email', user.email ?? '');

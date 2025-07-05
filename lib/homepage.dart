@@ -4,12 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account.dart';
 import 'main.dart';
-import 'package:intl/intl.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:intl/intl.dart'; // For date formatting
+import 'dart:io'; // For file handling
+import 'package:image_picker/image_picker.dart'; // For image picking
+import 'package:firebase_storage/firebase_storage.dart'; // For image uploading
 
-
+// Save selected images and existing image
 List<XFile> _selectedImages = [];
 List<String> _existingImageUrls = [];
 
@@ -19,17 +19,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Key for the ScaffoldMessenger to show SnackBars
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  // Current user data variables
   String _avatarUrl = '';
   String _username = 'My Account';
   String _userId = '';
 
+  // Controllers for form inputs
   final TextEditingController _feelingController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  // ID of the entry being edited, null if creating a new entry
   String? _editingId;
 
-  Set<int> _expandedIndexes = {};
-  int _selectedIndex = 0;
+  Set<int> _expandedIndexes = {}; // Set to track expanded entries
+  int _selectedIndex = 0; // Index for bottom navigation
 
   @override
   void initState() {
@@ -37,6 +41,7 @@ class _HomePageState extends State<HomePage> {
     _initUserData();
   }
 
+  // Get user data from SharedPreferences and Firebase
   Future<void> _initUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final user = FirebaseAuth.instance.currentUser;
@@ -48,6 +53,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Show modal bottom sheet for adding or editing diary entries
   void _showEntryModal({Map<String, dynamic>? entry}) {
     if (entry != null) {
       _editingId = entry['id'];
@@ -63,6 +69,7 @@ class _HomePageState extends State<HomePage> {
 
     final bool _isDarkMode = isDarkMode.value;
 
+    // Show the modal bottom sheet
     showModalBottomSheet(
       context: context,
       backgroundColor: _isDarkMode ? const Color(0xFF23272F) : Colors.white,
@@ -86,6 +93,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
+              // Feeling field for diary entry
               TextField(
                 controller: _feelingController,
                 decoration: InputDecoration(
@@ -97,6 +105,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               SizedBox(height: 12),
+              // Description field for diary entry
               TextField(
                 controller: _descController,
                 decoration: InputDecoration(
@@ -110,6 +119,7 @@ class _HomePageState extends State<HomePage> {
                 maxLines: null,
                 textInputAction: TextInputAction.newline,
               ),
+              // Image selection for diary entry
               ElevatedButton.icon(
                 onPressed: () async {
                   final picker = ImagePicker();
@@ -123,6 +133,7 @@ class _HomePageState extends State<HomePage> {
                 icon: Icon(Icons.image),
                 label: Text("Select Images"),
               ),
+              // Display selected images
               if (_selectedImages.isNotEmpty)
                 Wrap(
                   spacing: 8,
@@ -136,6 +147,7 @@ class _HomePageState extends State<HomePage> {
                   }).toList(),
                 ),
               SizedBox(height: 12),
+              // Save Button
               ElevatedButton(
                 child: Text(
                   _editingId == null ? "Add" : "Update",
@@ -146,6 +158,7 @@ class _HomePageState extends State<HomePage> {
                       _descController.text.trim().isEmpty) return;
 
                   List<String> imageUrls = [];
+                  // Upload images to Firebase Storage
                   for (var image in _selectedImages) {
                     final ref = FirebaseStorage.instance
                         .ref()
@@ -190,6 +203,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Delete diary entry
   Future<void> _deleteEntry(String id) async {
     await FirebaseFirestore.instance.collection('entries').doc(id).delete();
   }
@@ -226,7 +240,7 @@ class _HomePageState extends State<HomePage> {
                 Image.asset('assets/logo.webp', height: 36),
                 SizedBox(width: 15),
                 Text(
-                  'MCR Diary',
+                  'My Diary',
                   style: TextStyle(
                     color: _isDarkMode
                         ? Colors.white
@@ -293,6 +307,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+                      // Dark mode toggle button
                       Padding(
                         padding: const EdgeInsets.only(right: 24),
                         child: IconButton(
@@ -314,6 +329,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   SizedBox(height: 24),
+                  // Diary entries list
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -345,6 +361,7 @@ class _HomePageState extends State<HomePage> {
                                   child: ListView.builder(
                                     itemCount: docs.length,
                                     itemBuilder: (context, index) {
+                                      // Format the createdAt date
                                       final data = docs[index].data() as Map<String, dynamic>;
                                       final createdAt = data['createdAt'];
                                       String formattedDate = '';
@@ -367,6 +384,7 @@ class _HomePageState extends State<HomePage> {
                                       };
                                       final isExpanded = _expandedIndexes.contains(index);
 
+                                      // Display the diary entry
                                       return Dismissible(
                                         key: Key(entry['id'].toString()),
                                         direction: DismissDirection.endToStart,
@@ -494,6 +512,7 @@ class _HomePageState extends State<HomePage> {
                                                                     ? TextOverflow.visible
                                                                     : TextOverflow.ellipsis,
                                                               ),
+                                                              // Display images if entry is expanded
                                                               if (isExpanded && data['images'] != null)
                                                               SizedBox(height: 10),
                                                               if (isExpanded && data['images'] != null)
@@ -548,6 +567,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
+          // Floating action button to add new diary entry
           floatingActionButton: FloatingActionButton(
             backgroundColor: Color.fromARGB(255, 47, 83, 179).withOpacity(0.9),
             onPressed: () => _showEntryModal(),
@@ -557,6 +577,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          // Bottom navigation bar with two items
           bottomNavigationBar: BottomAppBar(
             color: _isDarkMode ? Colors.grey[900] : Colors.white,
             shape: CircularNotchedRectangle(),

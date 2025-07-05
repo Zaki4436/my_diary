@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
 import 'password_change.dart';
 import 'email_change.dart';
 import 'main.dart';
@@ -19,18 +18,22 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
+  // User information
   String _avatarUrl = '';
   String _username = 'My Account';
   String _email = 'test@example.com';
   String _password = '';
+  // Selected index for bottom navigation
   int _selectedIndex = 1;
 
   @override
   void initState() {
     super.initState();
+    // Load user information from SharedPreferences
     _loadUserInfo();
   }
 
+  // Function to load user information from SharedPreferences
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -41,6 +44,7 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
+  // Function to update username in Firestore and SharedPreferences
   Future<void> _updateUsername(String username) async {
     final prefs = await SharedPreferences.getInstance();
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -56,6 +60,7 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
+  // Function to show dialog for changing username
   void _showChangeUsernameDialog() {
     final controller = TextEditingController(text: _username);
     showDialog(
@@ -92,28 +97,35 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  // Functio for deletes user data from Firestore, FirebaseAuth, and SharedPreferences
   Future<void> _deleteAccount() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
     try {
+      // Delete entry from Firestore
       await FirebaseFirestore.instance.collection('entries').where('uid', isEqualTo: uid).get().then((snap) async {
         for (var doc in snap.docs) {
           await doc.reference.delete();
         }
       });
 
+      // Delete user document from Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).delete();
 
+      // Delete user account from FirebaseAuth
       await FirebaseAuth.instance.currentUser?.delete();
 
+      // Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
+      // Navigate to login page
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       }
     } catch (e) {
+      // Handle errors during account deletion
       print('Account deletion error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting account: ${e.toString()}')),
@@ -121,6 +133,7 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  // Function to pick a new avatar image from gallery
   Future<void> _pickNewAvatar() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
@@ -146,6 +159,7 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     _isDarkMode = isDarkMode.value;
+    // Update the theme based on dark mode value
     return Theme(
       data: _isDarkMode
           ? ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black)
@@ -165,7 +179,7 @@ class _AccountPageState extends State<AccountPage> {
               Image.asset('assets/logo.webp', height: 36),
               SizedBox(width: 15),
               Text(
-                'MCR Diary',
+                'My Diary',
                 style: TextStyle(
                   color: _isDarkMode ? Colors.white : Color.fromARGB(255, 47, 83, 179),
                   fontWeight: FontWeight.bold,
@@ -336,6 +350,7 @@ class _AccountPageState extends State<AccountPage> {
             ),
           ],
         ),
+        // Bottom navigation bar with two icons
         bottomNavigationBar: BottomAppBar(
           color: _isDarkMode ? Colors.grey[900] : Colors.white,
           shape: CircularNotchedRectangle(),

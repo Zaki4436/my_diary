@@ -10,15 +10,20 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
+    // Start the navigation process after a delay
     _navigate();
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 2)); 
+    // Check if the user is already logged in
+    // by checking if email is stored in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString('email');
+    // If user already logged in, navigate to home page
     if (email != null && email.isNotEmpty) {
       Navigator.pushReplacementNamed(context, '/home');
+    // Otherwise, navigate to login page
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }
@@ -35,7 +40,7 @@ class _SplashPageState extends State<SplashPage> {
             Image.asset('assets/logo.webp', width: 120, height: 120),
             SizedBox(height: 24),
             Text(
-              "MCR Diary",
+              "My Diary",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 32,
@@ -44,6 +49,7 @@ class _SplashPageState extends State<SplashPage> {
               ),
             ),
             SizedBox(height: 16),
+            //Loading indicator
             CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),

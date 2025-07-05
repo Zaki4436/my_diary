@@ -10,14 +10,16 @@ class EmailChangePage extends StatefulWidget {
 }
 
 class _EmailChangePageState extends State<EmailChangePage> {
+  // Controllers for text fields
   final _oldEmailController = TextEditingController();
   final _newEmailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _emailError;
-  String? _successMsg;
+  String? _emailError; // Error message for email validation
+  String? _successMsg; // Success message after email change
 
-  bool _obscurePassword = true;
+  bool _obscurePassword = true; // Password visibility toggle
 
+  // Function to change user email
   Future<void> _changeEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final oldEmail = _oldEmailController.text.trim();
@@ -31,6 +33,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
       _emailError = null;
     });
 
+    // Check if any field is empty
     if (oldEmail.isEmpty || newEmail.isEmpty || password.isEmpty) {
       setState(() {
         _emailError = 'Please fill all fields';
@@ -38,6 +41,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
       return;
     }
 
+    // Check if the old email matches the current email
     if (oldEmail != currentEmail) {
       setState(() {
         _emailError = 'Old email does not match current email';
@@ -45,6 +49,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
       return;
     }
 
+    // Check if the new email is not same as the old email
     if (oldEmail == newEmail) {
       setState(() {
         _emailError = 'New email cannot be the same as old email';
@@ -53,15 +58,18 @@ class _EmailChangePageState extends State<EmailChangePage> {
     }
 
     try {
+      // Reauthenticate the user with  newemail for email change
       final cred = EmailAuthProvider.credential(email: oldEmail, password: password);
       await currentUser?.reauthenticateWithCredential(cred);
 
+      // Firebase Auth sends a verification email to the new address
       await currentUser?.verifyBeforeUpdateEmail(newEmail);
 
       setState(() {
         _successMsg = 'Verification email sent to new address. Please check your inbox.';
       });
 
+      // Display success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -77,6 +85,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
         ),
       );
     } catch (e) {
+      // Handle errors during email change
       print('Email change error: $e');
       setState(() {
         _emailError = 'Failed to change email. Make sure password is correct and new email is valid.';
@@ -106,6 +115,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
               colorBlendMode: _isDarkMode ? BlendMode.darken : BlendMode.srcOver,
             ),
           ),
+          // Overlay to darken or lighten the background
           Container(
             color: _isDarkMode
                 ? Colors.black.withOpacity(0.5)
@@ -122,6 +132,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(height: 16),
+                  // Text fields for old email
                   TextField(
                     controller: _oldEmailController,
                     decoration: InputDecoration(
@@ -132,6 +143,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     ),
                   ),
                   SizedBox(height: 16),
+                  // Text fields for new email
                   TextField(
                     controller: _newEmailController,
                     decoration: InputDecoration(
@@ -143,6 +155,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     ),
                   ),
                   SizedBox(height: 16),
+                  // Text fields for password
                   TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -179,6 +192,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                           borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
+                  // Display success message if email change was successful
                   if (_successMsg != null) ...[
                     SizedBox(height: 16),
                     Text(

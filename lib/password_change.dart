@@ -10,16 +10,18 @@ class PasswordChangePage extends StatefulWidget {
 }
 
 class _PasswordChangePageState extends State<PasswordChangePage> {
+  // Control user input
   final _emailController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
 
-  bool _emailVerified = false;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
-  String? _emailError;
-  String? _passError;
+  bool _emailVerified = false; // For make sure email input is right
+  bool _obscureNew = true; // Control whether new passwords are hidden
+  bool _obscureConfirm = true; // Control whether password verification is hidden
+  String? _emailError; // Save email error messages
+  String? _passError; // Save password error messages
 
+  // Function to verify user email before allowing password changes
   Future<void> _verifyEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final savedEmail = prefs.getString('email') ?? '';
@@ -34,20 +36,24 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     });
   }
 
+  // Function for change password
   Future<void> _changePassword() async {
     final newPass = _newPassController.text.trim();
     final confirmPass = _confirmPassController.text.trim();
 
+    // Check if there is an empty space
     if (newPass.isEmpty || confirmPass.isEmpty) {
       setState(() => _passError = 'Please fill all fields');
       return;
     }
 
+    // Check password matches
     if (newPass != confirmPass) {
       setState(() => _passError = 'Passwords do not match');
       return;
     }
 
+    // Check if the new password is the same as the old one
     final prefs = await SharedPreferences.getInstance();
     final currentPassword = prefs.getString('password') ?? '';
 
@@ -60,11 +66,14 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No user signed in');
 
+      // Update user password in Firebase
       await user.updatePassword(newPass);
 
+      // Save the new password into SharedPreferences
       await prefs.setString('password', newPass);
       setState(() => _passError = null);
 
+      // Show successful snackbar notification
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
