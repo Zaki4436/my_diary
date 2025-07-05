@@ -6,6 +6,12 @@ import 'account.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
+
+List<XFile> _selectedImages = [];
+List<String> _existingImageUrls = [];
 
 class HomePage extends StatefulWidget {
   @override
@@ -47,6 +53,8 @@ class _HomePageState extends State<HomePage> {
       _editingId = entry['id'];
       _feelingController.text = entry['feeling'];
       _descController.text = entry['description'];
+      _existingImageUrls = List<String>.from(entry['images'] ?? []);
+      _selectedImages.clear();
     } else {
       _editingId = null;
       _feelingController.clear();
@@ -102,6 +110,31 @@ class _HomePageState extends State<HomePage> {
                 maxLines: null,
                 textInputAction: TextInputAction.newline,
               ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final picker = ImagePicker();
+                  final picked = await picker.pickMultiImage();
+                  if (picked != null) {
+                    setState(() {
+                      _selectedImages = picked;
+                    });
+                  }
+                },
+                icon: Icon(Icons.image),
+                label: Text("Select Images"),
+              ),
+              if (_selectedImages.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  children: _selectedImages.map((img) {
+                    return Image.file(
+                      File(img.path),
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    );
+                  }).toList(),
+                ),
               SizedBox(height: 12),
               ElevatedButton(
                 child: Text(
@@ -112,11 +145,23 @@ class _HomePageState extends State<HomePage> {
                   if (_feelingController.text.trim().isEmpty ||
                       _descController.text.trim().isEmpty) return;
 
+                  List<String> imageUrls = [];
+                  for (var image in _selectedImages) {
+                    final ref = FirebaseStorage.instance
+                        .ref()
+                        .child('entries')
+                        .child('${DateTime.now().millisecondsSinceEpoch}_${image.name}');
+                    await ref.putFile(File(image.path));
+                    final url = await ref.getDownloadURL();
+                    imageUrls.add(url);
+                  }
+
                   final data = {
                     'userId': _userId,
                     'feeling': _feelingController.text.trim(),
                     'description': _descController.text.trim(),
                     'createdAt': DateTime.now(),
+                    'images': imageUrls,
                   };
 
                   if (_editingId == null) {
@@ -448,6 +493,24 @@ class _HomePageState extends State<HomePage> {
                                                                 overflow: isExpanded
                                                                     ? TextOverflow.visible
                                                                     : TextOverflow.ellipsis,
+                                                              ),
+                                                              if (isExpanded && data['images'] != null)
+                                                              SizedBox(height: 10),
+                                                              if (isExpanded && data['images'] != null)
+                                                              Wrap(
+                                                                spacing: 8,
+                                                                runSpacing: 8,
+                                                                children: List<Widget>.from((data['images'] as List).map((url) {
+                                                                  return ClipRRect(
+                                                                    borderRadius: BorderRadius.circular(8),
+                                                                    child: Image.network(
+                                                                      url,
+                                                                      width: 100,
+                                                                      height: 100,
+                                                                      fit: BoxFit.cover,
+                                                                    ),
+                                                                  );
+                                                                })),
                                                               ),
                                                             ],
                                                           ),
